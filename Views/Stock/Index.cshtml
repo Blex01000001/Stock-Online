@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Taiwan Stock Online</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .form-row {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: inline-block;
+            width: 120px;
+        }
+
+        input,
+        select,
+        button {
+            padding: 6px;
+            width: 200px;
+        }
+
+        button {
+            width: 150px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>股票日資料更新</h2>
+
+    <div class="form-row">
+        <label>常用股票：</label>
+        <select id="stockPreset">
+            <option value="">-- 選擇 --</option>
+            <option value="0050">0050 元大台灣50</option>
+            <option value="0056">0056 高股息</option>
+            <option value="00878">00878 國泰永續高股息</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label>股票代號：</label>
+        <input type="text" id="stockId" placeholder="例如 0050" />
+    </div>
+
+    <div class="form-row">
+        <label>起始年份：</label>
+        <input type="number" id="startYear" value="2010" />
+    </div>
+
+    <div class="form-row">
+        <button onclick="updateStock()">更新資料</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById("stockPreset").addEventListener("change", function () {
+            document.getElementById("stockId").value = this.value;
+        });
+
+        async function updateStock() {
+            const stockId = document.getElementById("stockId").value;
+            const startYear = document.getElementById("startYear").value;
+
+            if (!stockId) {
+                alert("請輸入股票代號");
+                return;
+            }
+
+            const res = await fetch("/stock/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    stockId: stockId,
+                    startYear: parseInt(startYear)
+                })
+            });
+
+            const text = await res.text();
+            document.getElementById("result").innerText = text;
+        }
+    </script>
+
+</body>
+
+</html>
