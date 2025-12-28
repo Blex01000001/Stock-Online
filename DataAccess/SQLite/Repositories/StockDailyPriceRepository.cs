@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
+using Stock_Online.DTOs;
 using System.Globalization;
 
 namespace Stock_Online.DataAccess.SQLite.Repositories
@@ -70,10 +71,29 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                     Note = reader.IsDBNull(10) ? null : reader.GetString(10)
                 });
             }
-
             return list;
         }
 
+        public void test(List<StockDailyPrice> stockPrices)
+        {
+            var re = stockPrices
+                .Where(x => x.TradeDate.Year == 2025)
+                .Where(x => x.TradeDate.Month == 12)
+                .Where(x => x.TradeDate.Date == new DateTime(2025,12,19))
+                .Select(x => new RatingModel()
+                {
+                    TradeDate = x.TradeDate,
+                    StartDate = x.TradeDate.AddDays(-3650-180),
+                    EndDate = x.TradeDate.AddDays(-3650+180),
+                    NowPrice = x.ClosePrice,
+
+                }).ToList();
+
+
+
+
+
+        }
         
     }
 }
