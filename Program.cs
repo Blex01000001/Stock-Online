@@ -1,4 +1,7 @@
+using Stock_Online.DataAccess.SQLite.Interface;
+using Stock_Online.DataAccess.SQLite.Repositories;
 using Stock_Online.Services;
+using Stock_Online.Services.Interface;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,9 +11,12 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton(
-    new StockDailyPriceService("stock.db")
-);
+//builder.Services.AddSingleton(
+//    new StockDailyPriceService("stock.db")
+//);
+builder.Services.AddScoped<IStockDailyPriceRepository, StockDailyPriceRepository>();
+builder.Services.AddScoped<IStockDailyPriceService, StockDailyPriceService>();
+
 // 註冊 CORS 服務，這裡先定義一個全開的 Policy
 builder.Services.AddCors(options =>
 {
