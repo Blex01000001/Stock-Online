@@ -1,21 +1,31 @@
 ﻿using System.Net.Http.Json;
 using Microsoft.Data.Sqlite;
+using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
 using Stock_Online.DTOs;
+using Stock_Online.Services.Interface;
 
 namespace Stock_Online.Services
 {
 
-    public class StockDailyPriceService
+    public class StockDailyPriceService : IStockDailyPriceService
     {
         private readonly string _dbPath;
+        private readonly IStockDailyPriceRepository _repo;
 
-        public StockDailyPriceService(string dbPath)
+        public StockDailyPriceService(IStockDailyPriceRepository repo)
         {
-            _dbPath = dbPath;
+            _dbPath = "stock.db";
+            _repo = repo;
             EnsureTable();
         }
+        public async Task<List<StockDailyPrice>> GetDailyPricesAsync(string stockId)
+        {
+            if (string.IsNullOrWhiteSpace(stockId))
+                throw new ArgumentException("StockId 不可為空");
 
+            return await _repo.GetByStockIdAsync(stockId);
+        }
         public async Task FetchAndSaveAsync(int year, string stockId)
         {
             using var http = new HttpClient();

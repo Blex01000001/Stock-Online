@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Stock_Online.Services;
 using Stock_Online.DTOs;
+using Stock_Online.Services.Interface;
 
 namespace Stock_Online.Controllers
 {
@@ -8,13 +9,11 @@ namespace Stock_Online.Controllers
     [Route("stock")]
     public class StockController : Controller
     {
-        private readonly StockDailyPriceService _service;
-
-        public StockController(StockDailyPriceService service)
+        private readonly IStockDailyPriceService _service;
+        public StockController(IStockDailyPriceService service)
         {
             _service = service;
         }
-
         // 5. 接收 HTML
         [HttpGet("")]
         public IActionResult Index()
@@ -40,5 +39,22 @@ namespace Stock_Online.Controllers
 
             return Ok($"股票 {req.StockId} 已更新完成 ({req.StartYear} ~ {endYear})");
         }
+        [HttpPost("update/single")]
+        public async Task<IActionResult> UpdateSingle([FromBody] UpdateStockRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.StockId))
+                return BadRequest("StockId 不可為空");
+
+                await _service.FetchAndSaveAsync(req.StartYear, req.StockId);
+
+            return Ok($"股票 {req.StockId} 已更新完成 ({req.StartYear})");
+        }
+        [HttpGet("{stockId}/daily")]
+        public async Task<IActionResult> GetDailyPrices(string stockId)
+        {
+            var data = await _service.GetDailyPricesAsync(stockId);
+            return Ok(data);
+        }
+
     }
 }
