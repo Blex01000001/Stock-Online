@@ -15,7 +15,9 @@ builder.Services.AddSwaggerGen();
 //    new StockDailyPriceService("stock.db")
 //);
 builder.Services.AddScoped<IStockDailyPriceRepository, StockDailyPriceRepository>();
-builder.Services.AddScoped<IStockDailyPriceService, StockDailyPriceService>();
+builder.Services.AddScoped<IStockPriceUpdateService, StockDailyPriceService>();
+builder.Services.AddScoped<IROILineChartService, ROILineChartService>();
+
 
 // 註冊 CORS 服務，這裡先定義一個全開的 Policy
 builder.Services.AddCors(options =>

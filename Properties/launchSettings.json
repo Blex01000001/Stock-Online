@@ -26,7 +26,7 @@
       "launchUrl": "swagger", //開瀏覽器時要開哪個路徑 EX:http://0.0.0.0:7278/swagger
       //"applicationUrl": "https://localhost:7278;http://localhost:5274",
       //"applicationUrl": "https://0.0.0.0:7278", // OK
-      "applicationUrl": "http://0.0.0.0:7278", // API 要「監聽哪個 IP + Port」(本機存在的 IP) + (該 IP 上尚未被占用的 Port)」
+      "applicationUrl": "http://0.0.0.0:7278", // API 要「監聽哪個 IP + Port」=> (本機存在的 IP) + (該 IP 上尚未被占用的 Port)」
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

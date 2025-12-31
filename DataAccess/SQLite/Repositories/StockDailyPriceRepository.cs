@@ -8,11 +8,14 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
 {
     public class StockDailyPriceRepository : IStockDailyPriceRepository
     {
+        private readonly string _dbPath;
         private readonly string _connectionString;
 
         public StockDailyPriceRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("Sqlite");
+            _dbPath = "stock.db";
+            EnsureTable();
         }
 
         public async Task<List<StockDailyPrice>> GetByStockIdAsync(string stockId)
@@ -36,10 +39,10 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                 PriceChange,
                 TradeCount,
                 Note
-            FROM StockDailyPrice
-            WHERE StockId = @stockId
-            ORDER BY TradeDate
-        ";
+                FROM StockDailyPrice
+                WHERE StockId = @stockId
+                ORDER BY TradeDate
+            ";
 
             cmd.Parameters.AddWithValue("@stockId", stockId);
 
@@ -73,27 +76,68 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
             }
             return list;
         }
-
-        public void test(List<StockDailyPrice> stockPrices)
+        public void SaveToDb(List<StockDailyPrice> list)
         {
-            var re = stockPrices
-                .Where(x => x.TradeDate.Year == 2025)
-                .Where(x => x.TradeDate.Month == 12)
-                .Where(x => x.TradeDate.Date == new DateTime(2025,12,19))
-                .Select(x => new RatingModel()
-                {
-                    TradeDate = x.TradeDate,
-                    StartDate = x.TradeDate.AddDays(-3650-180),
-                    EndDate = x.TradeDate.AddDays(-3650+180),
-                    NowPrice = x.ClosePrice,
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            conn.Open();
+            using var tx = conn.BeginTransaction();
 
-                }).ToList();
+            foreach (var item in list)
+            {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText =
+                    """
+                    INSERT OR REPLACE INTO StockDailyPrice
+                    (StockId, TradeDate, Volume, Amount, OpenPrice, HighPrice, LowPrice,
+                     ClosePrice, PriceChange, TradeCount, Note)
+                    VALUES
+                    (@StockId, @TradeDate, @Volume, @Amount, @Open, @High, @Low,
+                     @Close, @Change, @Count, @Note);
+                    """;
 
+                cmd.Parameters.AddWithValue("@StockId", item.StockId);
+                cmd.Parameters.AddWithValue("@TradeDate", item.TradeDate.ToString("yyyy-MM-dd"));
+                cmd.Parameters.AddWithValue("@Volume", item.Volume);
+                cmd.Parameters.AddWithValue("@Amount", item.Amount);
+                cmd.Parameters.AddWithValue("@Open", item.OpenPrice);
+                cmd.Parameters.AddWithValue("@High", item.HighPrice);
+                cmd.Parameters.AddWithValue("@Low", item.LowPrice);
+                cmd.Parameters.AddWithValue("@Close", item.ClosePrice);
+                cmd.Parameters.AddWithValue("@Change", item.PriceChange);
+                cmd.Parameters.AddWithValue("@Count", item.TradeCount);
+                cmd.Parameters.AddWithValue("@Note", item.Note);
 
+                cmd.ExecuteNonQuery();
+            }
 
-
-
+            tx.Commit();
         }
-        
+        private void EnsureTable()
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            conn.Open();
+
+            var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                """
+                CREATE TABLE IF NOT EXISTS StockDailyPrice (
+                StockId TEXT NOT NULL,
+                TradeDate TEXT NOT NULL,
+                Volume INTEGER,
+                Amount INTEGER,
+                OpenPrice REAL,
+                HighPrice REAL,
+                LowPrice REAL,
+                ClosePrice REAL,
+                PriceChange REAL,
+                TradeCount INTEGER,
+                Note TEXT,
+                PRIMARY KEY (StockId, TradeDate)
+                );
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+
     }
 }
