@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="utf-8" />
+    <title>台股報酬折線圖</title>
+
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+            background: #f0f2f5;
+        }
+
+        /* 整條工具列 */
+        #InputArea {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #ffffff;
+            border-bottom: 1px solid #ddd;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #QueryArea,
+        #UpdateArea {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        #QueryArea {
+            background: #e3f2fd;
+            padding: 6px;
+            border-radius: 8px;
+        }
+
+        #UpdateArea {
+            background: #e8f5e9;
+            padding: 6px;
+            border-radius: 8px;
+        }
+
+        input,
+        select,
+        button {
+            padding: 4px 6px;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: auto;
+            padding: 16px;
+        }
+
+        #chart {
+            width: 100%;
+            height: 500px;
+            /* ← 關鍵 */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="InputArea">
+        <div id="QueryArea">
+            <input type="text" id="inputYearField" placeholder="年份" style="width:70px;">
+            <input type="text" id="inputStockIDField" placeholder="股票代號" style="width:70px;">
+            <input type="text" id="inputDaysField" placeholder="比較天數" style="width:70px;">
+            <button class="search-btn" onclick="search()">Query</button>
+        </div>
+    </div>
+    <div class="page">
+        <div id="chart"></div>
+    </div>
+    <script>
+        const apiBase = "http://localhost:7278";
+        const chart = echarts.init(document.getElementById("chart"));
+
+        async function search() {
+            const stockId = document.getElementById("inputStockIDField").value;
+            const Year = document.getElementById("inputYearField").value;
+            const days = document.getElementById("inputDaysField").value;
+
+            if (!stockId) {
+                alert("請輸入股票代號");
+                return;
+            }
+
+            const res = await fetch(
+                `${apiBase}/chart/roi/line-chart?stockId=${stockId}&Year=${Year}&Days=${days}`
+            );
+
+            const data = await res.json();
+            renderChart(stockId, data.result);
+            console.log("finish");
+        }
+
+        function renderChart(stockId, seriesList) {
+
+            if (!seriesList || seriesList.length === 0) {
+                chart.clear();
+                return;
+            }
+            // x 軸：以第一條線為基準（假設日期一致）
+            const xAxisData = seriesList[0].points.map(p => p.x);
+
+            // 轉成 ECharts series
+            const series = seriesList.map(s => ({
+                name: s.name,
+                type: "line",
+                smooth: true,
+                data: s.points.map(p => p.y)
+            }));
+
+            chart.setOption({
+                title: {
+                    text: `${stockId} 折線圖`,
+                    left: "center"
+                },
+                tooltip: {
+                    trigger: "axis"
+                },
+                legend: {
+                    top: 30
+                },
+                xAxis: {
+                    type: "category",
+                    data: xAxisData
+                },
+                yAxis: {
+                    type: "value",
+                    scale: true
+                },
+                series: series
+            });
+        }
+    </script>
+
+</body>
+
+</html>

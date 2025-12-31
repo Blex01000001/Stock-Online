@@ -7,12 +7,12 @@ namespace Stock_Online.Controllers
 {
     [ApiController]
     [Route("stock")]
-    public class StockController : Controller
+    public class StockUpdateController : ControllerBase
     {
-        private readonly IStockDailyPriceService _service;
-        public StockController(IStockDailyPriceService service)
+        private readonly IStockPriceUpdateService _stockPriceUpdateService;
+        public StockUpdateController(IStockPriceUpdateService stockPriceUpdateService)
         {
-            _service = service;
+            this._stockPriceUpdateService = stockPriceUpdateService;
         }
         // 5. 接收 HTML
         [HttpGet("")]
@@ -34,7 +34,7 @@ namespace Stock_Online.Controllers
 
             for (int year = req.StartYear; year <= endYear; year++)
             {
-                await _service.FetchAndSaveAsync(year, req.StockId);
+                await _stockPriceUpdateService.FetchAndSaveAsync(year, req.StockId);
             }
 
             return Ok($"股票 {req.StockId} 已更新完成 ({req.StartYear} ~ {endYear})");
@@ -45,16 +45,19 @@ namespace Stock_Online.Controllers
             if (string.IsNullOrWhiteSpace(req.StockId))
                 return BadRequest("StockId 不可為空");
 
-                await _service.FetchAndSaveAsync(req.StartYear, req.StockId);
+                await _stockPriceUpdateService.FetchAndSaveAsync(req.StartYear, req.StockId);
 
             return Ok($"股票 {req.StockId} 已更新完成 ({req.StartYear})");
         }
         [HttpGet("{stockId}/daily")]
         public async Task<IActionResult> GetDailyPrices(string stockId)
         {
-            var data = await _service.GetDailyPricesAsync(stockId);
+            var data = await _stockPriceUpdateService.GetDailyPricesAsync(stockId);
             return Ok(data);
         }
+
+
+
 
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Stock_Online.Services.Interface
 {
-    public interface IStockDailyPriceService
+    public interface IStockPriceUpdateService
     {
         Task<List<StockDailyPrice>> GetDailyPricesAsync(string stockId);
         Task FetchAndSaveAsync(int year, string stockId);

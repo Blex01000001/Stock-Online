@@ -10,8 +10,32 @@
             padding: 20px;
         }
 
-        .form-row {
+        .form-container {
+            width: 1000px;
+            /* 所有 form-row 的共同寬度 */
+            margin: 0 auto;
+            /* 整個表單區塊置中 */
+            justify-content: center;
+            /* 水平 */
+        }
+
+        .form-row1 {
             margin-bottom: 12px;
+            width: 450px;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-row2 {
+            margin-bottom: 12px;
+
+            display: flex;
+            align-items: center;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
         }
 
         label {
@@ -27,8 +51,11 @@
         }
 
         button {
-            width: 240px;
+            width: 350px;
+            padding: 10px 16px;
+            /* ← 重點 */
             margin-right: 6px;
+            cursor: pointer;
         }
 
         #result {
@@ -49,53 +76,53 @@
 
 <body>
 
-    <h2>股票日資料更新</h2>
+    <h2>股票資料更新</h2>
+    <div class="form-container">
+        <div class="form-row1">
+            <label>常用股票：</label>
+            <select id="stockPreset">
+                <option value="">-- 選擇 --</option>
+                <option value="0050">0050 元大台灣50</option>
+                <option value="0056">0056 高股息</option>
+                <option value="00878">00878 國泰永續高股息</option>
 
-    <div class="form-row">
-        <label>常用股票：</label>
-        <select id="stockPreset">
-            <option value="">-- 選擇 --</option>
-            <option value="0050">0050 元大台灣50</option>
-            <option value="0056">0056 高股息</option>
-            <option value="00878">00878 國泰永續高股息</option>
+                <option value="9924">9924 福興</option>
+                <option value="8112">8112 至上</option>
+                <option value="2352">2352 佳世達</option>
+                <option value="1102">1102 亞泥</option>
+                <option value="2412">2412 中華電</option>
+                <option value="2886">2886 兆豐金</option>
+                <option value="9933">9933 中鼎</option>
+                <option value="2884">2884 玉山金</option>
+                <option value="2881">2881 富邦金</option>
+                <option value="2882">2882 國泰金</option>
+                <option value="6188">6188 廣明</option>
+                <option value="2330">2330 台積電</option>
+            </select>
+        </div>
 
-            <option value="9924">9924 福興</option>
-            <option value="8112">8112 至上</option>
-            <option value="2352">2352 佳世達</option>
-            <option value="1102">1102 亞泥</option>
-            <option value="2412">2412 中華電</option>
-            <option value="2886">2886 兆豐金</option>
-            <option value="9933">9933 中鼎</option>
-            <option value="2884">2884 玉山金</option>
-            <option value="2881">2881 富邦金</option>
-            <option value="2882">2882 國泰金</option>
-            <option value="6188">6188 廣明</option>
-            <option value="2330">2330 台積電</option>
-        </select>
+        <div class="form-row1">
+            <label>股票代號：</label>
+            <input type="text" id="stockId" placeholder="例如 2330" />
+        </div>
+
+        <div class="form-row1">
+            <label>起始年份：</label>
+            <input type="number" id="startYear" value="2010" />
+        </div>
+
+        <div class="form-row2">
+            <button onclick="updateSingleStock()">更新單一股票（起始年 ~ 今年）</button>
+            <button onclick="updatePresetStocks()">更新常用股票（單一年）</button>
+        </div>
     </div>
-
-    <div class="form-row">
-        <label>股票代號：</label>
-        <input type="text" id="stockId" placeholder="例如 2330" />
-    </div>
-
-    <div class="form-row">
-        <label>起始年份：</label>
-        <input type="number" id="startYear" value="2010" />
-    </div>
-
-    <div class="form-row">
-        <button onclick="updateSingleStock()">更新單一股票（起始年 ~ 今年）</button>
-        <button onclick="updatePresetStocks()">更新常用股票（單一年）</button>
-    </div>
-
     <div id="result"></div>
 
     <script>
-        const apiBase = "https://localhost:7278";
+        const apiBase = "http://localhost:7278";
 
         const presetStocks = [
-            //"0050", "0056", "00878", "9924", "8112", "2352", "1102", "2412", "2886", "9933", "2884", "2881", "2882", "6188", "2330"
+            "0050", "0056", "00878", "9924", "8112", "2352", "1102", "2412", "2886", "9933", "2884", "2881", "2882", "6188", "2330"
             //all//"2327", "5880", "3034", "2883", "3008", "2002", "1303", "2603", "6919", "2059","5871", "2207", "5876", "1301", "3045", "4904", "2395", "4938", "2912", "2615","2609", "6505", "6446", "2618", "2376", "2449", "1504", "3036", "2356", "3044","4958", "2324", "2105", "1102", "2347", "6239", "2385", "3005", "3702", "2377","2353", "2474", "2027", "1477", "6176", "9904", "6285", "3023", "1319", "2006","9941", "5347", "1402", "5434", "6257", "4766", "6196", "3030", "4915", "9939","2610", "2206", "1210", "9917", "2393", "6278", "6670", "2504", "2441", "1215","2607", "2850", "3010", "2015", "6605", "3592", "2404", "8299", "6121", "5522","2606", "3211", "2637", "2451", "4763", "2371", "2458", "8112", "6005", "6757","5508", "6412", "8070", "2439", "2520", "1442", "1326", "2409", "2633", "9945","2352", "2845", "2915", "1722", "8454", "5483", "3260", "3264", "6147", "3227","5388", "8016", "4961", "6197", "3617", "3078", "3090", "6206", "2801", "3037","3665", "1101", "2834", "1590", "9910", "1476", "3706", "6472", "6789", "2838","6409", "8210", "2889", "6592", "2211", "2201", "2204", "2855", "8926", "6414","1609", "9933", "2467", "3042", "6214", "2362", "2515", "1707", "9930", "2103","8131", "6806", "5515"
         ];
 
