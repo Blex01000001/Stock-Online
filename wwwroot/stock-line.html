@@ -65,6 +65,19 @@
             height: 500px;
             /* ← 關鍵 */
         }
+
+        .chart-card {
+            background: #ffffff;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            padding: 8px 8px 16px 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .chart-box {
+            width: 100%;
+            height: 500px;
+        }
     </style>
 </head>
 
@@ -78,11 +91,12 @@
         </div>
     </div>
     <div class="page">
-        <div id="chart"></div>
+        <div id="chartList"></div>
     </div>
+
     <script>
         const apiBase = "http://localhost:7278";
-        const chart = echarts.init(document.getElementById("chart"));
+        //const chart = echarts.init(document.getElementById("chart"));
 
         async function search() {
             const stockId = document.getElementById("inputStockIDField").value;
@@ -106,38 +120,94 @@
         function renderChart(stockId, seriesList) {
 
             if (!seriesList || seriesList.length === 0) {
-                chart.clear();
                 return;
             }
-            // x 軸：以第一條線為基準（假設日期一致）
+
+            // === 1. 建立 DOM ===
+            const chartList = document.getElementById("chartList");
+
+            const card = document.createElement("div");
+            card.className = "chart-card";
+
+            const chartDiv = document.createElement("div");
+            chartDiv.className = "chart-box";
+
+            card.appendChild(chartDiv);
+
+            // 新的插在最上面
+            chartList.prepend(card);
+
+            // === 2. 初始化 echarts ===
+            const chart = echarts.init(chartDiv);
+
+            // x 軸
             const xAxisData = seriesList[0].points.map(p => p.x);
 
-            // 轉成 ECharts series
             const series = seriesList.map(s => ({
                 name: s.name,
                 type: "line",
-                smooth: true,
+                smooth: false,
+                symbol: "none",
+                lineStyle: { width: 2 },
                 data: s.points.map(p => p.y)
             }));
 
+            // === 3. 設定 option ===
             chart.setOption({
                 title: {
-                    text: `${stockId} 折線圖`,
-                    left: "center"
+                    text: `${stockId} ROI 折線圖`,
+                    left: "center",
+                    top: 10
                 },
                 tooltip: {
-                    trigger: "axis"
+                    trigger: "axis",
+                    valueFormatter: value => `${(value * 100).toFixed(2)}%`
                 },
                 legend: {
-                    top: 30
+                    top: 40,
+                    left: "center"
+                },
+                grid: {
+                    top: 90,
+                    left: 70,
+                    right: 30,
+                    bottom: 60
                 },
                 xAxis: {
                     type: "category",
-                    data: xAxisData
+                    data: xAxisData,
+                    boundaryGap: false,
+                    axisLabel: {
+                        fontSize: 11,
+                        rotate: 45,          // 日期多時必備
+                        margin: 12
+                    },
+                    //name: "日期",
+                    nameLocation: "middle",
+                    nameGap: 45,
+                    nameTextStyle: {
+                        fontSize: 12
+                    }
                 },
                 yAxis: {
                     type: "value",
-                    scale: true
+                    scale: true,
+                    axisLabel: {
+                        formatter: value => `${(value * 100).toFixed(0)}%`,
+                        fontSize: 11
+                    },
+                    name: "報酬率 (%)",
+                    nameLocation: "middle",
+                    nameGap: 55,
+                    nameTextStyle: {
+                        fontSize: 12
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            type: "dashed",
+                            opacity: 0.6
+                        }
+                    }
                 },
                 series: series
             });

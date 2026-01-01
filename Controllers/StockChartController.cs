@@ -19,6 +19,7 @@ namespace Stock_Online.Controllers
             [FromQuery] int days
 )
         {
+            Console.WriteLine($"{stockId} {year} {days}");
             if (string.IsNullOrWhiteSpace(stockId))
                 return BadRequest("stockId is required");
 

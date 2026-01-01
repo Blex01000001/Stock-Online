@@ -1,4 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
+using SqlKata;
+using SqlKata.Compilers;
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
 using Stock_Online.DTOs;
@@ -10,7 +12,7 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
     {
         private readonly string _dbPath;
         private readonly string _connectionString;
-
+        private readonly SqliteCompiler _compiler = new();
         public StockDailyPriceRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("Sqlite");
@@ -18,6 +20,56 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
             EnsureTable();
         }
 
+        public async Task<List<StockDailyPrice>> GetByQueryAsync(Query query)
+        {
+            var result = new List<StockDailyPrice>();
+
+            // 1️⃣ 編譯 SqlKata → SQL + Parameters
+            var compiled = _compiler.Compile(query);
+
+            await using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync();
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = compiled.Sql;
+
+            // 2️⃣ 參數綁定（這一步很關鍵）
+            foreach (var kv in compiled.NamedBindings)
+            {
+                cmd.Parameters.AddWithValue(kv.Key, kv.Value ?? DBNull.Value);
+            }
+
+            // 3️⃣ Execute + Mapping
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                result.Add(new StockDailyPrice
+                {
+                    StockId = reader.GetString(reader.GetOrdinal("StockId")),
+
+                    TradeDate = DateTime.ParseExact(
+                        reader.GetString(reader.GetOrdinal("TradeDate")),
+                        "yyyy-MM-dd",
+                        CultureInfo.InvariantCulture
+                    ),
+
+                    Volume = reader.IsDBNull(reader.GetOrdinal("Volume")) ? 0 : reader.GetInt64(reader.GetOrdinal("Volume")),
+                    Amount = reader.IsDBNull(reader.GetOrdinal("Amount")) ? 0 : reader.GetInt64(reader.GetOrdinal("Amount")),
+
+                    OpenPrice = reader.IsDBNull(reader.GetOrdinal("OpenPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("OpenPrice")),
+                    HighPrice = reader.IsDBNull(reader.GetOrdinal("HighPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("HighPrice")),
+                    LowPrice = reader.IsDBNull(reader.GetOrdinal("LowPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("LowPrice")),
+                    ClosePrice = reader.IsDBNull(reader.GetOrdinal("ClosePrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("ClosePrice")),
+
+                    PriceChange = reader.IsDBNull(reader.GetOrdinal("PriceChange")) ? 0 : reader.GetDecimal(reader.GetOrdinal("PriceChange")),
+                    TradeCount = reader.IsDBNull(reader.GetOrdinal("TradeCount")) ? 0 : reader.GetInt32(reader.GetOrdinal("TradeCount")),
+
+                    Note = reader.IsDBNull(reader.GetOrdinal("Note")) ? null : reader.GetString(reader.GetOrdinal("Note"))
+                });
+            }
+
+            return result;
+        }
         public async Task<List<StockDailyPrice>> GetByStockIdAsync(string stockId)
         {
             var list = new List<StockDailyPrice>();
