@@ -17,6 +17,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IStockDailyPriceRepository, StockDailyPriceRepository>();
 builder.Services.AddScoped<IStockPriceUpdateService, StockDailyPriceService>();
 builder.Services.AddScoped<IROILineChartService, ROILineChartService>();
+builder.Services.AddScoped<IKLineChartService, KLineChartService>();
 
 
 // 註冊 CORS 服務，這裡先定義一個全開的 Policy
