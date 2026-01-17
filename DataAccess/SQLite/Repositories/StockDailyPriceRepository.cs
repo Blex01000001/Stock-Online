@@ -70,6 +70,7 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
 
             return result;
         }
+
         public async Task<List<StockDailyPrice>> GetByStockIdAsync(string stockId)
         {
             var list = new List<StockDailyPrice>();

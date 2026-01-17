@@ -10,5 +10,12 @@ namespace Stock_Online.Services.Interface
             string? start,
             string? end
         );
+        Task<List<KLineChartDto>> GetKMultipleLineAsync(
+            string stockId,
+            int? days,
+            string? start,
+            string? end
+        );
+
     }
 }

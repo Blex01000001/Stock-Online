@@ -10,5 +10,7 @@
         /// MA 線集合
         /// </summary>
         public List<MALineDto> MALines { get; set; } = new();
+        public List<KLineMarkerDto> Markers { get; set; } = new();
+        public List<KLineMarkLineDto> MarkLines { get; set; } = new();
     }
 }
