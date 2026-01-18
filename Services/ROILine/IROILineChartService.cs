@@ -1,6 +1,6 @@
 ﻿using Stock_Online.DTOs.Line_chart;
 
-namespace Stock_Online.Services.Interface
+namespace Stock_Online.Services.ROILine
 {
     public interface IROILineChartService
     {

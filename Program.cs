@@ -1,7 +1,12 @@
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.DataAccess.SQLite.Repositories;
-using Stock_Online.Services;
-using Stock_Online.Services.Interface;
+using Stock_Online.Services.KLine;
+using Stock_Online.Services.KLine.Builders;
+using Stock_Online.Services.KLine.Indicators;
+using Stock_Online.Services.KLine.Queries;
+using Stock_Online.Services.KLine.Patterns;
+using Stock_Online.Services.ROILine;
+using Stock_Online.Services.Update;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +23,7 @@ builder.Services.AddScoped<IStockDailyPriceRepository, StockDailyPriceRepository
 builder.Services.AddScoped<IStockPriceUpdateService, StockDailyPriceService>();
 builder.Services.AddScoped<IROILineChartService, ROILineChartService>();
 builder.Services.AddScoped<IKLineChartService, KLineChartService>();
+builder.Services.AddScoped<IMovingAverageCalculator, MovingAverageCalculator>();
 
 
 // 註冊 CORS 服務，這裡先定義一個全開的 Policy

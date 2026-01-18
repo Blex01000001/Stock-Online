@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Stock_Online.Services;
 using Stock_Online.DTOs;
-using Stock_Online.Services.Interface;
+using Stock_Online.Services.Update;
 
 namespace Stock_Online.Controllers
 {

@@ -1,6 +1,6 @@
 ﻿using Stock_Online.Domain.Entities;
 
-namespace Stock_Online.Services.Interface
+namespace Stock_Online.Services.Update
 {
     public interface IStockPriceUpdateService
     {

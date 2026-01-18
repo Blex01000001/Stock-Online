@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Stock_Online.DTOs;
-using Stock_Online.Services.Interface;
+using Stock_Online.Services.KLine;
+using Stock_Online.Services.KLine.Patterns.Enum;
+using Stock_Online.Services.ROILine;
 
 namespace Stock_Online.Controllers
 {
@@ -37,8 +39,6 @@ namespace Stock_Online.Controllers
         /// <summary>
         /// K 線圖
         /// </summary>
-        /// GET /chart/kline?stockId=2330&days=120
-        /// GET /chart/kline?stockId=2330&start=20220101&end=20221231
         [HttpGet("kline")]
         public async Task<IActionResult> GetKLine(
             [FromQuery] string stockId,
@@ -70,8 +70,8 @@ namespace Stock_Online.Controllers
             Console.WriteLine($"result.Points.Count: {result.Points.Count}");
             return Ok(result);
         }
-        [HttpGet("multiple-kline")]
-        public async Task<IActionResult> GetKMultipleLine(
+        [HttpGet("kline/pattern")]
+        public async Task<IActionResult> GetPatternKLine(
             [FromQuery] string stockId,
             [FromQuery] int? days,
             [FromQuery] string? start,
@@ -98,11 +98,9 @@ namespace Stock_Online.Controllers
 
             foreach (var stock in stocks)
             {
-                var charts = await _kLineChartService.GetKMultipleLineAsync(
+                var charts = await _kLineChartService.GetKPatternLineAsync(
                     stock,
-                    null,
-                    "20200101",
-                    "20261231"
+                    CandlePattern.FlatBottom
                 );
 
                 result.AddRange(charts);

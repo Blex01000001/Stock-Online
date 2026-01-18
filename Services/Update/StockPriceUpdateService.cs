@@ -4,9 +4,8 @@ using Microsoft.Data.Sqlite;
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
 using Stock_Online.DTOs;
-using Stock_Online.Services.Interface;
 
-namespace Stock_Online.Services
+namespace Stock_Online.Services.Update
 {
 
     public class StockDailyPriceService : IStockPriceUpdateService
@@ -15,7 +14,7 @@ namespace Stock_Online.Services
 
         public StockDailyPriceService(IStockDailyPriceRepository repo)
         {
-            this._repo = repo;
+            _repo = repo;
         }
         public async Task<List<StockDailyPrice>> GetDailyPricesAsync(string stockId)
         {

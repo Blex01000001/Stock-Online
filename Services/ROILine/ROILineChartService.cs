@@ -3,10 +3,9 @@ using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
 using Stock_Online.DTOs;
 using Stock_Online.DTOs.Line_chart;
-using Stock_Online.Services.Interface;
 using System;
 
-namespace Stock_Online.Services
+namespace Stock_Online.Services.ROILine
 {
     public class ROILineChartService : IROILineChartService
     {
@@ -16,12 +15,12 @@ namespace Stock_Online.Services
 
         public ROILineChartService(IStockDailyPriceRepository repo)
         {
-            this._repo = repo;
+            _repo = repo;
         }
         public async Task<List<LineSeriesDto>> GetChart(string stockId, int year, int days)
         {
             Console.WriteLine($"GetChart {stockId} {year} {days}");
-            this._year = year;
+            _year = year;
 
             Query query = new Query("StockDailyPrice")
                 .Where("StockId", stockId);
@@ -31,14 +30,14 @@ namespace Stock_Online.Services
 
             _orderedDailyPrices = dailyPrices.OrderByDescending(x => x.TradeDate).ToList();
 
-            var lineSeriesDto = new List<LineSeriesDto>() { 
+            var lineSeriesDto = new List<LineSeriesDto>() {
                 CreateLineSeries(days),
                 CreateLineSeries(days*2),
                 CreateLineSeries(days*3),
                 CreateLineSeries(days*5),
                 CreateLineSeries(days*10),
             };
-                
+
             return lineSeriesDto;
         }
         private LineSeriesDto CreateLineSeries(int days)
