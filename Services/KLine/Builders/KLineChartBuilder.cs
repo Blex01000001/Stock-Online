@@ -12,18 +12,28 @@ namespace Stock_Online.Services.KLine.Builders
         private readonly int _index;
         private static readonly int[] MA_DAYS = { 5, 20, 60, 120, 240 };
         private readonly int _left;
+        private readonly int _right;
 
-        public KLineChartBuilder(string stockId, IReadOnlyList<StockDailyPrice> prices, int currDayIndex, Dictionary<int, List<decimal?>> maMap)
+        public KLineChartBuilder(string stockId, IReadOnlyList<StockDailyPrice> prices, int currDayIndex, Dictionary<int, List<decimal?>> maMap, bool area = true)
         {
             _stockId = stockId;
             _maMap = maMap;
-
-            _left = Math.Max(0, currDayIndex - 50);
-            int right = Math.Min(prices.Count - 1, currDayIndex + 50);
+            
+            if (area)
+            {
+                _left = Math.Max(0, currDayIndex - 50);
+                _right = Math.Min(prices.Count - 1, currDayIndex + 50);
+            }
+            else
+            {
+                _left = currDayIndex;
+                _right = prices.Count - 1;
+                Console.WriteLine($"left: {_left} right: {_right}");
+            }
 
             _prices = prices
                 .Skip(_left)
-                .Take(right - _left + 1)
+                .Take(_right - _left + 1)
                 .ToList();
 
             _index = currDayIndex - _left;
@@ -35,7 +45,7 @@ namespace Stock_Online.Services.KLine.Builders
             {
                 Date = x.TradeDate.ToString("yyyy-MM-dd"),
                 Value = new[]
-    {
+                {
                     x.OpenPrice,
                     x.ClosePrice,
                     x.LowPrice,
@@ -44,7 +54,7 @@ namespace Stock_Online.Services.KLine.Builders
                 Volume = x.Volume
             }).ToList();
 
-            var closes = _prices.Select(x => x.ClosePrice).ToList();
+            //var closes = _prices.Select(x => x.ClosePrice).ToList();
 
             var maLines = MA_DAYS.Select(period =>
             {
@@ -88,5 +98,65 @@ namespace Stock_Online.Services.KLine.Builders
             };
 
         }
+        public KLineChartDto CreateSingle()
+        {
+            var points = _prices.Select(x => new KLinePointDto
+            {
+                Date = x.TradeDate.ToString("yyyy-MM-dd"),
+                Value = new[]
+                {
+                    x.OpenPrice,
+                    x.ClosePrice,
+                    x.LowPrice,
+                    x.HighPrice
+                },
+                Volume = x.Volume
+            }).ToList();
+
+            //var closes = _prices.Select(x => x.ClosePrice).ToList();
+
+            var maLines = MA_DAYS.Select(period =>
+            {
+                var fullMa = _maMap[period];
+
+                return new MALineDto
+                {
+                    Name = $"MA{period}",
+                    Values = fullMa
+                        .Skip(_left)
+                        .Take(_prices.Count)
+                        .ToList()
+                };
+            }).ToList();
+
+            var markLines = new List<KLineMarkLineDto>();
+
+            int targetIndex = _index + 20;
+
+            if (targetIndex < _prices.Count)
+            {
+                markLines.Add(new KLineMarkLineDto
+                {
+                    Date = _prices[targetIndex].TradeDate.ToString("yyyy-MM-dd"),
+                    Type = "N+20",
+                    Label = "N+20"
+                });
+            }
+            return new KLineChartDto
+            {
+                StockId = _stockId,
+                Points = points,
+                MALines = maLines
+                //Markers = new List<KLineMarkerDto> { new KLineMarkerDto
+                //{
+                //    Date = _prices[_index].TradeDate.ToString("yyyy-MM-dd"),
+                //    Type = "Selected",
+                //    Label = "N"
+                //}},
+                //MarkLines = markLines
+            };
+
+        }
+
     }
 }

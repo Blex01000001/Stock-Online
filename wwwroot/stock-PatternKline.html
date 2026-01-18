@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>個股K線</title>
+    <title>組合K線</title>
 
     <!-- ECharts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
@@ -59,7 +59,7 @@
 
         #chartList {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(800px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
             gap: 12px;
         }
 
@@ -70,7 +70,7 @@
         .hint {
             font-size: 12px;
             color: #666;
-            margin: 8px 0 0 2px;
+            margin: 0px 0 0 2px;
         }
 
         #QuickRangeArea {
@@ -94,31 +94,29 @@
             <input type="date" id="inputStartDate">
             <input type="date" id="inputEndDate">
             <div id="QuickRangeArea">
-                <button onclick="setRecentYears(1)">近 1 年</button>
-                <button onclick="setRecentYears(2)">近 2 年</button>
-                <button onclick="setRecentYears(3)">近 3 年</button>
-                <button onclick="setRecentYears(5)">近 5 年</button>
-                <button onclick="setRecentYears(10)">近 10 年</button>
+                <button onclick="setRecentYears(1)">近一年</button>
+                <button onclick="setRecentYears(2)">近二年</button>
+                <button onclick="setRecentYears(3)">近三年</button>
+                <button onclick="setRecentYears(5)">近五年</button>
+                <button onclick="setRecentYears(10)">近十年</button>
             </div>
 
-            <button onclick="addKline()">加入個股K線</button>
-            <!--
             <select id="inputPattern">
                 <option value="">-- Pattern --</option>
-                <option value="FlatBottom">平頭底 FlatBottom</option>
+                <option value="TweezerBottom">平頭底 TweezerBottom</option>
                 <option value="Hammer">錘子線 Hammer</option>
                 <option value="DuskStar">黃昏之星 DuskStar</option>
+                <option value="RisingThreeMethods">上升三法 RisingThreeMethods</option>
+                <option value="BullishEngulfing">看漲吞沒 BullishEngulfing</option>
+                <option value="BearishEngulfing">看跌吞沒 BearishEngulfing</option>
             </select>
+
             <button onclick="searchStockPattern()">搜尋個股 Pattern</button>
             <button onclick="searchPatternAll()">搜尋 Pattern</button>
-            -->
         </div>
     </div>
 
     <div class="page">
-        <div class="hint">
-            ※ 每按一次搜尋就會在最上方新增一張 K 線圖卡片
-        </div>
         <div id="chartList"></div>
     </div>
 
@@ -157,7 +155,7 @@
                 alert("請輸入股票代號並選擇 Pattern");
                 return;
             }
-
+            clearChartList();
             const { start, end } = getDateRange();
 
             const url =
@@ -175,7 +173,7 @@
                 alert("請選擇 Pattern");
                 return;
             }
-
+            clearChartList();
             const url =
                 `${apiBase}/chart/kline/pattern/all-stock` +
                 `?pattern=${pattern}`;
@@ -341,7 +339,7 @@
                 title: {
                     text: `${stockId} K 線圖`,
                     left: "center",
-                    top: 10
+                    top: 3
                 },
                 tooltip: {
                     trigger: "axis",
@@ -354,8 +352,19 @@
                     }
                 },
                 legend: {
-                    top: 40,
-                    left: "center"
+                    top: 30,
+                    left: "center",
+
+                    textStyle: {
+                        fontSize: 12,                 // ⭐ 字型大小
+                        fontFamily: "Segoe UI",       // 字型
+                        color: "#333",                // 文字顏色
+                        fontWeight: "normal"          // normal / bold
+                    },
+
+                    itemWidth: 14,                   // 圖例圖示寬
+                    itemHeight: 8,                   // 圖例圖示高
+                    itemGap: 5                      // 每個 legend 之間的距離
                 },
                 grid: [
                     { top: 90, left: 70, right: 30, height: 180 },  // K 線
@@ -499,7 +508,6 @@
             const ro = new ResizeObserver(() => chart.resize());
             ro.observe(chartDiv);
         }
-
         initDefaultDateRange();
 
         function setRecentYears(years) {
@@ -545,6 +553,10 @@
                 d.setDate(0);
             }
             return d;
+        }
+        function clearChartList() {
+            const chartList = document.getElementById("chartList");
+            chartList.innerHTML = "";
         }
 
 

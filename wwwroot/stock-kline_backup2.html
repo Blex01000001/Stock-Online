@@ -57,14 +57,9 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
         }
 
-        #chartList {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 12px;
-        }
-
         .chart-box {
-            height: 400px;
+            width: 100%;
+            height: 560px;
         }
 
         .hint {
@@ -113,7 +108,7 @@
 
             // ⚠️ 這個 endpoint 你可以改成你自己的
             // 例如：/chart/kline?stockId=2330
-            const url = `${apiBase}/chart/kline/pattern?stockId=${encodeURIComponent(stockId)}`;
+            const url = `${apiBase}/chart/kline?stockId=${encodeURIComponent(stockId)}`;
 
             let res;
             try {
@@ -130,30 +125,20 @@
                 return;
             }
 
-            const list = await res.json();
-            console.log(list);
+            const data = await res.json();
+            const rows = data?.points ?? [];
+            const maLines = data?.maLines ?? [];
 
-            if (!Array.isArray(list) || list.length === 0) {
+            if (rows.length === 0) {
                 alert("沒有資料");
                 return;
             }
 
-            const chartList = document.getElementById("chartList");
-            chartList.innerHTML = "";
-
-            for (const dto of list) {
-                renderKline(
-                    dto.stockId,
-                    dto.points,
-                    dto.maLines,
-                    dto.markers,
-                    dto.markLines     // ⭐ 新增這個
-                );
-            }
+            renderKline(stockId, rows, maLines);
         }
 
 
-        function renderKline(stockId, rows, maLines, markers, markLines) {
+        function renderKline(stockId, rows, maLines) {
 
             // === K 線 DTO 格式檢查（date + value[4]） ===
             const clean = rows.filter(p =>
@@ -164,7 +149,7 @@
             );
 
             if (clean.length === 0) {
-                //alert("資料格式不符合（K 線 value 異常）");
+                alert("資料格式不符合（K 線 value 異常）");
                 return;
             }
 
@@ -178,39 +163,7 @@
             chartDiv.className = "chart-box";
 
             card.appendChild(chartDiv);
-            chartList.appendChild(card);
-
-            const markPoints = (markers ?? [])
-                .map(m => {
-                    const idx = clean.findIndex(p => p.date === m.date);
-                    if (idx === -1) return null;
-
-                    return {
-                        coord: [idx, clean[idx].value[3]], // 高點
-                        name: m.label,
-                        type: m.type
-                    };
-                })
-                .filter(Boolean);
-
-            const lineData = (markLines ?? [])
-                .map(l => {
-                    const idx = clean.findIndex(p => p.date === l.date);
-                    if (idx === -1) return null;
-
-                    const low = clean[idx].value[2];
-                    const high = clean[idx].value[3];
-                    const range = high - clean[idx].value[2];
-                    const yTop = high * 1.015;
-                    const isUp = l.type === "Up";
-
-                    return [
-                        { coord: [idx, high * 1.01], label: l.label },      // ⭐ 上方起點
-                        { coord: [idx, high * 1.002] }    // ⭐ 箭頭指向 K 線
-                    ];
-                })
-                .filter(Boolean);
-
+            chartList.prepend(card);
 
             // === 2) 準備 ECharts 資料 ===
             const xData = clean.map(p => p.date);
@@ -261,23 +214,15 @@
                     left: "center"
                 },
                 grid: [
-                    { top: 90, left: 70, right: 30, height: 180 },  // K 線
-                    { left: 70, right: 30, top: 330, height: 70 }   // 成交量
+                    { top: 90, left: 70, right: 30, height: 330 },  // K 線
+                    { left: 70, right: 30, top: 450, height: 80 }   // 成交量
                 ],
                 xAxis: [
                     {
                         type: "category",
                         data: xData,
                         boundaryGap: false,
-                        axisLabel: {
-                            fontSize: 10,
-                            rotate: 90,
-                            margin: 12,
-                            formatter: (value) => {
-                                // value = "2025-12-01"
-                                return value.slice(2); // "25-12-01"
-                            }
-                        },
+                        axisLabel: { fontSize: 11, rotate: 45, margin: 12 },
                         axisLine: { onZero: false },
                         splitLine: { show: false },
                         min: "dataMin",
@@ -312,73 +257,15 @@
                     }
                 ],
                 dataZoom: [
-                    { type: "inside", xAxisIndex: [0, 1], start: 0, end: 100 },
-                    { type: "slider", xAxisIndex: [0, 1], top: 540, height: 20, start: 0, end: 100 }
+                    { type: "inside", xAxisIndex: [0, 1], start: 60, end: 100 },
+                    { type: "slider", xAxisIndex: [0, 1], top: 540, height: 20, start: 60, end: 100 }
                 ],
                 series: [
                     {
                         name: "K線",
                         type: "candlestick",
                         data: kData,
-                        markPoint: {
-                            symbol: "pin",  //pin / triangle / diamond / arrow / circle
-                            symbolSize: [40, 40], // 圖案大小 數字 or [w, h]）
-                            symbolOffset: [0, -10], // 圖案位置微調（x, y）
-                            symbolRotate: 0,
-                            itemStyle: {
-                                color: "#FF5050",    // 圖案顏色
-                                borderColor: "#FF5050",        // 邊框顏色
-                                borderWidth: 1
-                            },
-                            label: {
-                                show: true,
-                                // ===== 文字內容 =====
-                                formatter: p => p.name,     // 你現在用的 label
-
-                                // ===== 字體 =====
-                                fontSize: 14,               // ⭐ 文字大小（最常調）
-                                //fontWeight: "bold",         // normal / bold / bolder
-                                fontFamily: "Segoe UI",     // 可選
-
-                                // ===== 顏色 =====
-                                color: "#000",              // ⭐ 文字顏色
-
-                                // ===== 文字背景 =====
-                                //backgroundColor: "rgba(255,255,255,0.9)",
-                                //borderColor: "#ff9800",
-                                //borderWidth: 1,
-                                //borderRadius: 4,
-                                //padding: [2, 6],            // ⭐ 上下 / 左右 padding
-
-                                // ===== 文字位置 =====
-                                position: "inside",            // top / bottom / left / right / inside
-                                distance: 0               // ⭐ 文字與圖案的距離
-                            },
-                            data: markPoints
-                        },
-                        markLine: {
-                            symbol: ["none", "arrow"],
-                            symbolSize: [6, 10],
-                            //symbolOffset: [0, 0], // 圖案位置微調（x, y）
-                            label: {
-                                show: true,
-                                position: "start",           // start / middle / end
-                                formatter: p => p.data.label,    // 或 p.data?.label
-                                fontSize: 14,
-                                color: "#e53935",
-                                backgroundColor: "rgba(255,255,255,1)",
-                                borderRadius: 4,
-                                padding: [2, 6],
-                                distance: 0
-                            },
-                            lineStyle: {
-                                color: "#e53935",          // 線顏色
-                                width: 2,                  // 線寬
-                                type: "solid",             // solid / dashed / dotted
-                                opacity: 0.9               // 透明度
-                            },
-                            data: lineData
-                        }
+                        // 你如果想要更細緻的顏色控制可以再加 itemStyle
                     },
                     ...maSeries,
                     {

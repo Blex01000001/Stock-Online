@@ -4,9 +4,9 @@ using Stock_Online.Services.KLine.Builders;
 using Stock_Online.Services.KLine.Indicators;
 using Stock_Online.Services.KLine.Queries;
 using Stock_Online.Services.KLine.Patterns;
-using Stock_Online.Services.KLine.Patterns.Enum;
 using SqlKata;
 using Stock_Online.Domain.Entities;
+using Stock_Online.Domain.Enums;
 
 namespace Stock_Online.Services.KLine
 {
@@ -21,37 +21,27 @@ namespace Stock_Online.Services.KLine
             this._MAcalculator = mAcalculator;
         }
 
-        public async Task<KLineChartDto> GetKLineAsync(
+        public async Task<List<KLineChartDto>> GetKLineAsync(
             string stockId,
             int? days,
             string? start,
             string? end
         )
         {
-            throw new NotImplementedException();
-            //Query query = new Query("StockDailyPrice")
-            //    .Where("StockId", stockId);
+            Query query = StockDailyPriceQueryBuilder.Build(stockId, null, start, end);
+            List<StockDailyPrice> prices = (await _stockDailyrepo.GetByQueryAsync(query))
+                .OrderBy(x => x.TradeDate)
+                .ToList();
 
-            //if (!string.IsNullOrWhiteSpace(start))
-            //{
-            //    var startDate = DateTime.ParseExact(start, "yyyyMMdd", null);
-            //    query.Where("TradeDate", ">=", startDate);
-            //}
+            Query queryAll = StockDailyPriceQueryBuilder.Build(stockId, null, "20100101", end);
+            List<StockDailyPrice> pricesAll = (await _stockDailyrepo.GetByQueryAsync(queryAll))
+                .OrderBy(x => x.TradeDate)
+                .ToList();
 
-            //if (!string.IsNullOrWhiteSpace(end))
-            //{
-            //    var endDate = DateTime.ParseExact(end, "yyyyMMdd", null);
-            //    query.Where("TradeDate", "<=", endDate);
-            //}
+            var allPriceDic = pricesAll.ToDictionary(k => k.TradeDate, v => v);
+            int index = pricesAll.IndexOf(allPriceDic[prices[0].TradeDate]);
 
-            //if (days.HasValue)
-            //{
-            //    query.OrderByDesc("TradeDate").Limit(days.Value);
-            //}
-
-            //List<StockDailyPrice> prices = (await _stockDailyrepo.GetByQueryAsync(query))
-            //    .OrderBy(x => x.TradeDate)
-            //    .ToList();
+            Dictionary<int, List<decimal?>> maMap = _MAcalculator.Calculate(pricesAll);
 
             //var points = prices.Select(x => new KLinePointDto
             //{
@@ -75,7 +65,7 @@ namespace Stock_Online.Services.KLine
             //        Values = CalcMA(closes, ma)
             //    }
             //).ToList();
-
+            return new List<KLineChartDto> { new KLineChartBuilder(stockId, pricesAll, index, maMap, false).CreateSingle() };
             //return new KLineChartDto
             //{
             //    StockId = stockId,
