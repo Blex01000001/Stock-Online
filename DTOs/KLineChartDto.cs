@@ -5,6 +5,7 @@
         public string StockId { get; set; }
 
         public List<KLinePointDto> Points { get; set; } = new();
+        public string PatternType { get; set; }
 
         /// <summary>
         /// MA 線集合

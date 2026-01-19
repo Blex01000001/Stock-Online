@@ -76,12 +76,12 @@ namespace Stock_Online.Services.KLine.Builders
 
             if (targetIndex < _prices.Count)
             {
-                markLines.Add(new KLineMarkLineDto
-                {
-                    Date = _prices[targetIndex].TradeDate.ToString("yyyy-MM-dd"),
-                    Type = "N+20",
-                    Label = "N+20"
-                });
+                //markLines.Add(new KLineMarkLineDto
+                //{
+                //    Date = _prices[targetIndex].TradeDate.ToString("yyyy-MM-dd"),
+                //    Type = "N+20",
+                //    Label = "N+20"
+                //});
             }
             return new KLineChartDto
             {
@@ -146,7 +146,7 @@ namespace Stock_Online.Services.KLine.Builders
             {
                 StockId = _stockId,
                 Points = points,
-                MALines = maLines
+                MALines = maLines,
                 //Markers = new List<KLineMarkerDto> { new KLineMarkerDto
                 //{
                 //    Date = _prices[_index].TradeDate.ToString("yyyy-MM-dd"),

@@ -1,4 +1,5 @@
 ﻿using Stock_Online.Domain.Entities;
+using System.Diagnostics;
 
 namespace Stock_Online.Services.KLine.Patterns
 {
@@ -74,5 +75,13 @@ namespace Stock_Online.Services.KLine.Patterns
             => _ma.TryGetValue(period, out var list)
                 ? list[Index]
                 : null;
+
+        public CandleContext At(int offset)
+            => Has(offset)
+        ? new CandleContext(Data, Index + offset, _ma)
+        : null;
+
+        private bool Has(int offset)
+            => Index + offset >= 0 && Index + offset < Data.Count;
     }
 }
