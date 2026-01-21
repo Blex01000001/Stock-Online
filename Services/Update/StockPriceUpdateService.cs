@@ -56,8 +56,7 @@ namespace Stock_Online.Services.Update
         }
         public async Task FetchAndSaveAllStockAsync(int year)
         {
-            //List<string> stockIds = await _repo.GetAllStockIdsAsync();
-            List<string> stockIds = new List<string>() { "2330", "9933", "1108"};
+            List<string> stockIds = await _repo.GetAllStockIdsAsync();
 
             foreach (var stockId in stockIds)
             {
