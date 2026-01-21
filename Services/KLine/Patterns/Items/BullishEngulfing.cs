@@ -12,10 +12,10 @@
 
             return
                 k1.BodyPct < -2 && k1.LowerShadowPct < 5 &&
-                k2.BodyPct > 2 && k2.LowerShadowPct < 5 && k2.UpperShadowPct < 5 && k2.Open < k1.Close && k2.Close > k1.Open &&
-                k1.MA(20) < k1.MA(60) && k1.MA(20) < k1.MA(120) &&
-                k1.MA(20) < k_5.MA(20) &&
-                Math.Abs(k1.Close - k1.MA(60).Value)/k1.MA(60) < 0.1m
+                k2.BodyPct > 2 && k2.LowerShadowPct < 5 && k2.UpperShadowPct < 5 && k2.Open < k1.Low && k2.Close > k1.High 
+                //k1.MA(20) < k1.MA(60) && k1.MA(20) < k1.MA(120) &&
+                //k1.MA(20) < k_5.MA(20) &&
+                //Math.Abs(k1.Close - k1.MA(60).Value)/k1.MA(60) < 0.1m
                 ;
         }
     }

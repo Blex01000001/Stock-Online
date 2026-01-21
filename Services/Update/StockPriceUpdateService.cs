@@ -22,40 +22,6 @@ namespace Stock_Online.Services.Update
                 throw new ArgumentException("StockId 不可為空");
 
             var re = await _repo.GetByStockIdAsync(stockId);
-
-
-            //var re1 = re
-            //    //.Where(x => x.TradeDate.Year == 2025)
-            //    //.Where(x => x.TradeDate.Month == 12)
-            //    .Where(x => x.TradeDate > new DateTime(2025, 1, 1))
-            //    .Select(xx => new RatingModel()
-            //    {
-            //        TradeDate = xx.TradeDate,
-            //        StartDate = xx.TradeDate.AddDays(-3650 - 180),
-            //        EndDate = xx.TradeDate.AddDays(-3650 + 180),
-            //        NowPrice = xx.ClosePrice,
-            //        MaxPrice = re.Where(x => x.TradeDate > xx.TradeDate.AddDays(-3650 - 180))
-            //                    .Where(x => x.TradeDate < xx.TradeDate.AddDays(-3650 + 180))
-            //                    .Max(x => x.ClosePrice),
-            //        MinPrice = re.Where(x => x.TradeDate > xx.TradeDate.AddDays(-3650 - 180))
-            //                    .Where(x => x.TradeDate < xx.TradeDate.AddDays(-3650 + 180))
-            //                    .Min(x => x.ClosePrice),
-            //    }).ToList();
-
-            //foreach (var item in re1)
-            //{
-            //    item.Ca();
-            //    Console.WriteLine($"{item.TradeDate.Date.Year}-{item.TradeDate.Date.Month}-{item.TradeDate.Date.Day}" +
-            //        $" \tMax: {item.MaxPrice}  {item.RatingMax}% \tMin: {item.MinPrice}  {item.RatingMin}% \tSub: {item.RatingSub}%");
-            //}
-
-
-
-
-
-
-
-
             return re;
         }
         public async Task FetchAndSaveAsync(int year, string stockId)
@@ -91,10 +57,7 @@ namespace Stock_Online.Services.Update
             var p = rocDate.Split('/');
             return new DateTime(int.Parse(p[0]) + 1911, int.Parse(p[1]), int.Parse(p[2]));
         }
-
-        private static StockDailyPrice? TryMapToModel(
-            string stockId,
-            List<string> row)
+        private static StockDailyPrice? TryMapToModel(string stockId, List<string> row)
         {
             try
             {

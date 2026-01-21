@@ -9,7 +9,7 @@ namespace Stock_Online.Services.KLine.Indicators
         {
             var closes = prices.Select(x => x.ClosePrice).ToList();
 
-            var maMap = MA_DAYS.ToDictionary(
+            Dictionary<int, List<decimal?>> maMap = MA_DAYS.ToDictionary(
                 p => p,
                 p => CalcMA(closes, p)
             );

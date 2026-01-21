@@ -3,6 +3,7 @@ using SqlKata;
 using SqlKata.Compilers;
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
+using Stock_Online.Domain.Entities.Stock_Online.DTOs;
 using Stock_Online.DTOs;
 using System.Globalization;
 
@@ -190,7 +191,65 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                 """;
             cmd.ExecuteNonQuery();
         }
+        public async Task<StockInfoDto?> GetStockInfoAsync(string stockId)
+        {
+            await using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync();
 
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                SELECT
+                    公司代號,
+                    公司名稱,
+                    公司簡稱,
+                    產業別,
+                    董事長,
+                    總經理,
+                    網址
+                FROM StockList
+                WHERE 公司代號 = @stockId
+                LIMIT 1
+            ";
+
+            cmd.Parameters.AddWithValue("@stockId", stockId);
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+
+            if (!await reader.ReadAsync())
+                return null;
+
+            return new StockInfoDto
+            {
+                StockId = reader.GetInt32(0).ToString(),
+                CompanyName = reader.IsDBNull(1) ? null : reader.GetString(1),
+                CompanyShortName = reader.IsDBNull(2) ? null : reader.GetString(2),
+                Industry = reader.IsDBNull(3) ? null : reader.GetInt32(3).ToString(),
+                Chairman = reader.IsDBNull(4) ? null : reader.GetString(4),
+                GeneralManager = reader.IsDBNull(5) ? null : reader.GetString(5),
+                Website = reader.IsDBNull(6) ? null : reader.GetString(6)
+            };
+        }
+        public async Task<List<string>> GetAllStockIdsAsync()
+        {
+            var result = new List<string>();
+
+            await using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync();
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                SELECT 公司代號
+                FROM StockList
+                ORDER BY 公司代號
+            ";
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                result.Add(reader.GetInt32(0).ToString());
+            }
+            return result;
+        }
 
     }
 }
