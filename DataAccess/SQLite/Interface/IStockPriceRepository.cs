@@ -4,7 +4,7 @@ using Stock_Online.Domain.Entities.Stock_Online.DTOs;
 
 namespace Stock_Online.DataAccess.SQLite.Interface
 {
-    public interface IStockDailyPriceRepository
+    public interface IStockPriceRepository
     {
         Task<List<StockDailyPrice>> GetByStockIdAsync(string stockId);
         Task<List<StockDailyPrice>> GetByQueryAsync(Query query);

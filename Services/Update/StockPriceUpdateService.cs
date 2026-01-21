@@ -1,20 +1,24 @@
 ﻿using System.Net.Http.Json;
 using System.Security.Cryptography.Xml;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Data.Sqlite;
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
 using Stock_Online.DTOs;
+using Stock_Online.Hubs;
 
 namespace Stock_Online.Services.Update
 {
 
-    public class StockDailyPriceService : IStockPriceUpdateService
+    public class StockPriceUpdateService : IStockPriceUpdateService
     {
-        private readonly IStockDailyPriceRepository _repo;
+        private readonly IStockPriceRepository _repo;
+        private readonly IHubContext<StockUpdateHub> _hub;
 
-        public StockDailyPriceService(IStockDailyPriceRepository repo)
+        public StockPriceUpdateService(IStockPriceRepository repo, IHubContext<StockUpdateHub> hub)
         {
             _repo = repo;
+            _hub = hub;
         }
         public async Task<List<StockDailyPrice>> GetDailyPricesAsync(string stockId)
         {
@@ -49,6 +53,35 @@ namespace Stock_Online.Services.Update
                 _repo.SaveToDb(models);
                 //SaveToDb(models);
             }
+        }
+        public async Task FetchAndSaveAllStockAsync(int year)
+        {
+            //List<string> stockIds = await _repo.GetAllStockIdsAsync();
+            List<string> stockIds = new List<string>() { "2330", "9933", "1108"};
+
+            foreach (var stockId in stockIds)
+            {
+                Console.WriteLine($"FetchAndSaveAllStockAsync {stockId}");
+                try
+                {
+                    await FetchAndSaveAsync(year, stockId);
+
+                    // ✅ 即時回報前端
+                    await _hub.Clients.All.SendAsync(
+                        "Progress",
+                        $"{stockId} 股票 {year} 已更新完成"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    await _hub.Clients.All.SendAsync(
+                        "Progress",
+                        $"{stockId} 股票 {year} 更新失敗：{ex.Message}"
+                    );
+                }
+            }
+
+            await _hub.Clients.All.SendAsync("Progress", "全部股票更新完成");
         }
 
         private static DateTime ParseRocDate(string rocDate)

@@ -2,6 +2,7 @@
 using Stock_Online.Services;
 using Stock_Online.DTOs;
 using Stock_Online.Services.Update;
+using Stock_Online.Common.Validation;
 
 namespace Stock_Online.Controllers
 {
@@ -54,6 +55,18 @@ namespace Stock_Online.Controllers
         {
             var data = await _stockPriceUpdateService.GetDailyPricesAsync(stockId);
             return Ok(data);
+        }
+        [HttpPost("update/all-stock")]
+        public async Task<IActionResult> UpdateAllStock([FromQuery] int year)
+        {
+            Console.WriteLine($"UpdateAllStock {year}");
+            var (ok, error) = YearValidator.Validate(year, minYear: 2010);
+            if (!ok)
+                return BadRequest(error);
+
+            _ = Task.Run(() => _stockPriceUpdateService.FetchAndSaveAllStockAsync(year));
+
+            return Ok($"開始更新 {year} 年所有股票");
         }
 
 

@@ -9,11 +9,11 @@ namespace Stock_Online.Services.ROILine
 {
     public class ROILineChartService : IROILineChartService
     {
-        private readonly IStockDailyPriceRepository _repo;
+        private readonly IStockPriceRepository _repo;
         private int _year;
         private List<StockDailyPrice> _orderedDailyPrices;
 
-        public ROILineChartService(IStockDailyPriceRepository repo)
+        public ROILineChartService(IStockPriceRepository repo)
         {
             _repo = repo;
         }

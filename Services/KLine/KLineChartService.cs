@@ -12,10 +12,10 @@ namespace Stock_Online.Services.KLine
 {
     public class KLineChartService : IKLineChartService
     {
-        private readonly IStockDailyPriceRepository _stockDailyrepo;
+        private readonly IStockPriceRepository _stockDailyrepo;
         private readonly IMovingAverageCalculator _MAcalculator;
 
-        public KLineChartService(IStockDailyPriceRepository repo, IMovingAverageCalculator mAcalculator)
+        public KLineChartService(IStockPriceRepository repo, IMovingAverageCalculator mAcalculator)
         {
             this._stockDailyrepo = repo;
             this._MAcalculator = mAcalculator;

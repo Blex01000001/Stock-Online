@@ -4,6 +4,8 @@
 <head>
     <meta charset="utf-8" />
     <title>Taiwan Stock Online</title>
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -114,11 +116,32 @@
         <div class="form-row2">
             <button onclick="updateSingleStock()">更新單一股票（起始年 ~ 今年）</button>
             <button onclick="updatePresetStocks()">更新常用股票（單一年）</button>
+            <button onclick="updateAllStocks()">更新全部台股股票（單一年）</button>
         </div>
     </div>
     <div id="result"></div>
 
     <script>
+        new signalR.HubConnectionBuilder()
+            .withUrl("http://localhost:7278/stockUpdateHub")
+
+        const conn = new signalR.HubConnectionBuilder()
+            .withUrl("http://localhost:7278/stockUpdateHub", {
+                withCredentials: true
+            })
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        conn.on("Progress", msg => {
+            console.log("收到 Progress:", msg);
+            appendLog(msg);
+        });
+
+        conn.start()
+            .then(() => console.log("✅ SignalR 已連線"))
+            .catch(err => console.error("❌ SignalR 連線失敗", err));
+
+
         const apiBase = "http://localhost:7278";
 
         const presetStocks = [
@@ -216,6 +239,30 @@
             select.appendChild(defaultOption);
 
             options.forEach(opt => select.appendChild(opt));
+        }
+        async function updateAllStocks() {
+            const year = document.getElementById("startYear").value;
+
+            if (!year) {
+                alert("請輸入年份");
+                return;
+            }
+
+            appendLog(`開始更新台股 ${year} 所有股票`);
+
+            try {
+                const res = await fetch(
+                    `${apiBase}/stock/update/all-stock?year=${year}`,
+                    { method: "POST" }
+                );
+
+                const text = await res.text();
+                appendLog(text);
+                appendLog("更新進度：");
+            }
+            catch {
+                appendLog("✖ 更新台股股票失敗");
+            }
         }
 
         // 頁面載入後排序

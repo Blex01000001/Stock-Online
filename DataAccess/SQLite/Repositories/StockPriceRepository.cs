@@ -9,12 +9,12 @@ using System.Globalization;
 
 namespace Stock_Online.DataAccess.SQLite.Repositories
 {
-    public class StockDailyPriceRepository : IStockDailyPriceRepository
+    public class StockPriceRepository : IStockPriceRepository
     {
         private readonly string _dbPath;
         private readonly string _connectionString;
         private readonly SqliteCompiler _compiler = new();
-        public StockDailyPriceRepository(IConfiguration configuration)
+        public StockPriceRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("Sqlite");
             _dbPath = "stock.db";

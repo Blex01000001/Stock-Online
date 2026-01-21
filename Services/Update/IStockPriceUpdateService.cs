@@ -6,5 +6,6 @@ namespace Stock_Online.Services.Update
     {
         Task<List<StockDailyPrice>> GetDailyPricesAsync(string stockId);
         Task FetchAndSaveAsync(int year, string stockId);
+        Task FetchAndSaveAllStockAsync(int year);
     }
 }

@@ -1,10 +1,8 @@
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.DataAccess.SQLite.Repositories;
+using Stock_Online.Hubs;
 using Stock_Online.Services.KLine;
-using Stock_Online.Services.KLine.Builders;
 using Stock_Online.Services.KLine.Indicators;
-using Stock_Online.Services.KLine.Queries;
-using Stock_Online.Services.KLine.Patterns;
 using Stock_Online.Services.ROILine;
 using Stock_Online.Services.Update;
 
@@ -19,8 +17,9 @@ builder.Services.AddSwaggerGen();
 //builder.Services.AddSingleton(
 //    new StockDailyPriceService("stock.db")
 //);
-builder.Services.AddScoped<IStockDailyPriceRepository, StockDailyPriceRepository>();
-builder.Services.AddScoped<IStockPriceUpdateService, StockDailyPriceService>();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IStockPriceRepository, StockPriceRepository>();
+builder.Services.AddScoped<IStockPriceUpdateService, StockPriceUpdateService>();
 builder.Services.AddScoped<IROILineChartService, ROILineChartService>();
 builder.Services.AddScoped<IKLineChartService, KLineChartService>();
 builder.Services.AddScoped<IMovingAverageCalculator, MovingAverageCalculator>();
@@ -37,12 +36,17 @@ builder.Services.AddCors(options =>
                 "http://localhost:5500"
             )
             .AllowAnyHeader() // 允許前端送出 任何 HTTP Header
-            .AllowAnyMethod(); //允許所有 HTTP 方法 GET / POST / PUT / DELETE / OPTIONS ...
+            .AllowAnyMethod() //允許所有 HTTP 方法 GET / POST / PUT / DELETE / OPTIONS ...
+        .AllowCredentials();
     });
 });
 
 var app = builder.Build();
+app.UseRouting();
+app.UseCors("DevCors");
 
+
+app.MapHub<StockUpdateHub>("/stockUpdateHub");
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -52,8 +56,6 @@ if (app.Environment.IsDevelopment())
 app.UseStaticFiles();  // 允許讀 wwwroot
 app.UseDefaultFiles();  // 啟用 index.html 規則
 app.UseHttpsRedirection();
-app.UseRouting();
-app.UseCors("DevCors");
 app.UseAuthorization();
 app.MapControllers();
 
