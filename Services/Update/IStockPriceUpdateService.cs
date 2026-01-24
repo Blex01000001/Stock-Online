@@ -1,4 +1,5 @@
-﻿using Stock_Online.Domain.Entities;
+﻿using Stock_Online.DataAccess;
+using Stock_Online.Domain.Entities;
 
 namespace Stock_Online.Services.Update
 {

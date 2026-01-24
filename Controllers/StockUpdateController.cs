@@ -40,7 +40,7 @@ namespace Stock_Online.Controllers
 
             return Ok($"股票 {req.StockId} 已更新完成 ({req.StartYear} ~ {endYear})");
         }
-        [HttpPost("update/single")]
+        [HttpPost("update/single-stock")]
         public async Task<IActionResult> UpdateSingle([FromBody] UpdateStockRequest req)
         {
             if (string.IsNullOrWhiteSpace(req.StockId))
@@ -68,9 +68,5 @@ namespace Stock_Online.Controllers
 
             return Ok($"開始更新 {year} 年所有股票");
         }
-
-
-
-
     }
 }

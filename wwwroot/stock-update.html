@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            padding: 20px;
+            padding: 2px;
         }
 
         .form-container {
@@ -37,7 +37,10 @@
 
         h2 {
             text-align: center;
-            margin-bottom: 20px;
+            font-size: 25px;
+            /* 字體大小 */
+            margin: 6px 0;
+            /* 上下 16px，左右 0 */
         }
 
         label {
@@ -114,7 +117,7 @@
         </div>
 
         <div class="form-row2">
-            <button onclick="updateSingleStock()">更新單一股票（起始年 ~ 今年）</button>
+            <button onclick="updateSingleStock()">更新單一股票（單一年）</button>
             <button onclick="updatePresetStocks()">更新常用股票（單一年）</button>
             <button onclick="updateAllStocks()">更新全部台股股票（單一年）</button>
         </div>
@@ -175,9 +178,9 @@
                 return;
             }
 
-            appendLog(`開始更新股票 ${stockId}（${startYear} ~ 今年）`);
+            appendLog(`開始更新股票 ${stockId}（${startYear} 年）`);
 
-            const res = await fetch(`${apiBase}/stock/update`, {
+            const res = await fetch(`${apiBase}/stock/update/single-stock`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -248,8 +251,6 @@
                 return;
             }
 
-            appendLog(`開始更新台股 ${year} 所有股票`);
-
             try {
                 const res = await fetch(
                     `${apiBase}/stock/update/all-stock?year=${year}`,
@@ -258,7 +259,6 @@
 
                 const text = await res.text();
                 appendLog(text);
-                appendLog("更新進度：");
             }
             catch {
                 appendLog("✖ 更新台股股票失敗");
