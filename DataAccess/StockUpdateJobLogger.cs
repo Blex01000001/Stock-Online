@@ -68,6 +68,7 @@
         public void JobSummary(
             int success,
             int fail,
+            int total,
             IEnumerable<string> failedStocks,
             DateTime startTime)
         {
@@ -76,6 +77,7 @@
             _log.Info("--------------------------------------------------");
             _log.Info("---------------------Summary----------------------");
             _log.Info("--------------------------------------------------");
+            _log.Info($"Total   : {total}");
             _log.Info($"Success : {success}");
             _log.Info($"Failed  : {fail}");
 

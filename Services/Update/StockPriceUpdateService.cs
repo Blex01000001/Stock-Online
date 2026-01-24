@@ -241,7 +241,7 @@ namespace Stock_Online.Services.Update
                 }
             }
             var endTime = DateTime.Now;
-            jobLog.JobSummary(success, fail, failedStocks, startTime);
+            jobLog.JobSummary(success, fail, total, failedStocks, startTime);
             await ReportProgressAsync($" {year} 全部股票更新完成");
             //await _hub.Clients.All.SendAsync("Progress", "全部股票更新完成");
         }
