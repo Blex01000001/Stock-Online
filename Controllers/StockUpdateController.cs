@@ -10,10 +10,14 @@ namespace Stock_Online.Controllers
     [Route("stock")]
     public class StockUpdateController : ControllerBase
     {
-        private readonly IStockPriceUpdateService _stockPriceUpdateService;
-        public StockUpdateController(IStockPriceUpdateService stockPriceUpdateService)
+        private readonly IStockPriceUpdateService _priceUpdateService;
+        private readonly IStockDividendUpdateService _dividendUpdateService;
+        public StockUpdateController(
+            IStockPriceUpdateService priceUpdateService,
+            IStockDividendUpdateService dividendUpdateService)
         {
-            this._stockPriceUpdateService = stockPriceUpdateService;
+            this._priceUpdateService = priceUpdateService;
+            this._dividendUpdateService = dividendUpdateService;
         }
         // 5. 接收 HTML
         [HttpGet("")]
@@ -35,28 +39,28 @@ namespace Stock_Online.Controllers
 
             for (int year = req.StartYear; year <= endYear; year++)
             {
-                await _stockPriceUpdateService.FetchAndSaveAsync(year, req.StockId);
+                await _priceUpdateService.FetchAndSaveAsync(year, req.StockId);
             }
 
             return Ok($"股票 {req.StockId} 已更新完成 ({req.StartYear} ~ {endYear})");
         }
-        [HttpPost("update/single-stock")]
+        [HttpPost("update/price/single-stock")]
         public async Task<IActionResult> UpdateSingle([FromBody] UpdateStockRequest req)
         {
             if (string.IsNullOrWhiteSpace(req.StockId))
                 return BadRequest("StockId 不可為空");
 
-                await _stockPriceUpdateService.FetchAndSaveAsync(req.StartYear, req.StockId);
+                await _priceUpdateService.FetchAndSaveAsync(req.StartYear, req.StockId);
 
             return Ok($"股票 {req.StockId} 已更新完成 ({req.StartYear})");
         }
         [HttpGet("{stockId}/daily")]
         public async Task<IActionResult> GetDailyPrices(string stockId)
         {
-            var data = await _stockPriceUpdateService.GetDailyPricesAsync(stockId);
+            var data = await _priceUpdateService.GetDailyPricesAsync(stockId);
             return Ok(data);
         }
-        [HttpPost("update/all-stock")]
+        [HttpPost("update/price/all-stock")]
         public async Task<IActionResult> UpdateAllStock([FromQuery] int year)
         {
             Console.WriteLine($"UpdateAllStock {year}");
@@ -64,9 +68,17 @@ namespace Stock_Online.Controllers
             if (!ok)
                 return BadRequest(error);
 
-            _ = Task.Run(() => _stockPriceUpdateService.FetchAndSaveAllStockAsync(year));
+            _ = Task.Run(() => _priceUpdateService.FetchAndSaveAllStockAsync(year));
 
             return Ok($"開始更新 {year} 年所有股票");
         }
+        [HttpPost("update/dividend/all-stock")]
+        public async Task<IActionResult> UpdateAll()
+        {
+            Console.WriteLine($"Update All Dividend");
+            _ = Task.Run(() => _dividendUpdateService.FetchAndSaveAllStockAsync());
+            return Ok($"Start 所有股票股利資訊");
+        }
+
     }
 }

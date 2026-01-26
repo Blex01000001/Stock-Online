@@ -120,6 +120,7 @@
             <button onclick="updateSingleStock()">更新單一股票（單一年）</button>
             <button onclick="updatePresetStocks()">更新常用股票（單一年）</button>
             <button onclick="updateAllStocks()">更新全部台股股票（單一年）</button>
+            <button onclick="updateAllStockDividend()">更新全部股票股利資訊</button>
         </div>
     </div>
     <div id="result"></div>
@@ -168,6 +169,23 @@
             // ✅ 自動捲到最新訊息
             container.scrollTop = container.scrollHeight;
         }
+        async function updateAllStockDividend() {
+            appendLog("🚀 開始更新所有股票股利資訊");
+
+            try {
+                const res = await fetch(
+                    `${apiBase}/stock/update/dividend/all-stock`,
+                    { method: "POST" }
+                );
+
+                const text = await res.text();
+                appendLog(text);
+            }
+            catch (err) {
+                console.error(err);
+                appendLog("✖ 更新所有股票股利資訊失敗");
+            }
+        }
 
         async function updateSingleStock() {
             const stockId = document.getElementById("stockId").value;
@@ -180,7 +198,7 @@
 
             appendLog(`開始更新股票 ${stockId}（${startYear} 年）`);
 
-            const res = await fetch(`${apiBase}/stock/update/single-stock`, {
+            const res = await fetch(`${apiBase}/stock/update/price/single-stock`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -253,7 +271,7 @@
 
             try {
                 const res = await fetch(
-                    `${apiBase}/stock/update/all-stock?year=${year}`,
+                    `${apiBase}/stock/update/price/all-stock?year=${year}`,
                     { method: "POST" }
                 );
 

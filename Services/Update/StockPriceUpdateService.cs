@@ -67,39 +67,6 @@ namespace Stock_Online.Services.Update
             jobLog.SingleStockSuccess(stockId);
             jobLog.JobEnd(DateTime.Now - startTime);
         }
-
-        //public async Task FetchAndSaveAsync(int year, string stockId)
-        //{
-        //    if (string.IsNullOrWhiteSpace(stockId))
-        //        throw new ArgumentException("StockId 不可為空");
-
-        //    string logFile =
-        //        $"Logs/StockUpdate_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid().ToString("N")[..5]}.log";
-
-        //    var log = new FileLogger(logFile);
-
-        //    log.Info("====================================");
-        //    log.Info("Single Stock Update Started");
-        //    log.Info($"StockId : {stockId}");
-        //    log.Info($"Year    : {year}");
-        //    log.Info("====================================");
-
-        //    var startTime = DateTime.Now;
-
-        //    bool success = await FetchAndSaveWithRetryAsync(year, stockId, log);
-
-        //    var endTime = DateTime.Now;
-
-        //    if (!success)
-        //    {
-        //        log.Error("Update failed after 3 retries");
-        //        throw new Exception($"Stock {stockId} update failed");
-        //    }
-
-        //    log.Info("Update success");
-        //    log.Info($"Total Time: {endTime - startTime}");
-        //    log.Info("====================================");
-        //}
         private async Task<bool> FetchAndSaveWithRetryAsync(
             int year,
             string stockId,
@@ -145,56 +112,6 @@ namespace Stock_Online.Services.Update
             }
             return false;
         }
-
-        //private async Task<bool> FetchAndSaveWithRetryAsync(
-        //    int year,
-        //    string stockId,
-        //    StockUpdateJobLogger jobLog)
-        //{
-        //    using var http = new HttpClient
-        //    {
-        //        Timeout = TimeSpan.FromSeconds(10)
-        //    };
-
-        //    for (int retry = 1; retry <= 3; retry++)
-        //    {
-        //        try
-        //        {
-        //            for (int month = 1; month <= 12; month++)
-        //            {
-        //                string date = $"{year}{month:00}01";
-        //                string url =
-        //                    $"https://www.twse.com.tw/exchangeReport/STOCK_DAY" +
-        //                    $"?response=json&date={date}&stockNo={stockId}";
-
-        //                var response =
-        //                    await http.GetFromJsonAsync<TwseStockDayResponse>(url);
-
-        //                if (response == null || response.stat != "OK")
-        //                    continue;
-
-        //                var models = response.data
-        //                    .Select(row => TryMapToModel(stockId, row))
-        //                    .Where(x => x != null)
-        //                    .Cast<StockDailyPrice>()
-        //                    .ToList();
-
-        //                _repo.SaveToDb(models);
-        //            }
-
-        //            return true; // 成功
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            log.Error($"Retry {retry}/3 failed for {stockId}: {ex.Message}");
-
-        //            if (retry < 3)
-        //                await Task.Delay(TimeSpan.FromSeconds(5));
-        //        }
-        //    }
-
-        //    return false; // 三次都失敗
-        //}
         public async Task FetchAndSaveAllStockAsync(int year)
         {
             var startTime = DateTime.Now;
@@ -221,11 +138,6 @@ namespace Stock_Online.Services.Update
                     success++;
                     jobLog.StockSuccess(stockId);
                     await ReportProgressAsync($" {year} 股票代號: {stockId} 已更新完成 ({current}/{total})");
-                    // ✅ SignalR：成功進度
-                    //await _hub.Clients.All.SendAsync(
-                    //    "Progress",
-                    //    $"{stockId} 股票 {year} 已更新完成 ({current}/{total})"
-                    //);
                 }
                 else
                 {
@@ -233,85 +145,16 @@ namespace Stock_Online.Services.Update
                     failedStocks.Add(stockId);
                     jobLog.StockFail(stockId);
                     await ReportProgressAsync($" {year} 股票代號: {stockId} 更新失敗 ({current}/{total})");
-                    // ✅ SignalR：失敗進度
-                    //await _hub.Clients.All.SendAsync(
-                    //    "Progress",
-                    //    $"{stockId} 股票 {year} 更新失敗 ({current}/{total})"
-                    //);
                 }
             }
             var endTime = DateTime.Now;
             jobLog.JobSummary(success, fail, total, failedStocks, startTime);
             await ReportProgressAsync($" {year} 全部股票更新完成");
-            //await _hub.Clients.All.SendAsync("Progress", "全部股票更新完成");
         }
         private async Task ReportProgressAsync(string message)
         {
             await _hub.Clients.All.SendAsync("Progress", message);
         }
-        //public async Task FetchAndSaveAllStockAsync(int year)
-        //{
-        //    var startTime = DateTime.Now;
-        //    var stockIds = await _repo.GetAllStockIdsAsync();
-        //    int total = stockIds.Count;
-        //    string logFile =$"Logs/StockUpdate_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid().ToString("N")[..5]}.log";
-        //    var jobLog = new StockUpdateJobLogger(logFile);
-        //    jobLog.JobStart(year, total);
-        //    int n = 1;
-        //    foreach (var stockId in stockIds)
-        //    {
-        //        jobLog.StockStart(stockId, n, total);
-        //        bool ok = await FetchAndSaveWithRetryAsync(year, stockId, log);
-
-        //        if (ok)
-        //        {
-        //            success++;
-        //            log.Info($"Success stock: {stockId}");
-
-        //            await _hub.Clients.All.SendAsync(
-        //                "Progress",
-        //                $"{stockId} 股票 {year} 已更新完成 ({n}/{total})"
-        //            );
-        //        }
-        //        else
-        //        {
-        //            fail++;
-        //            failedStocks.Add(stockId);
-
-        //            log.Error($"Failed stock: {stockId}");
-
-        //            await _hub.Clients.All.SendAsync(
-        //                "Progress",
-        //                $"{stockId} 股票 {year} 更新失敗 ({n}/{total})"
-        //            );
-        //        }
-
-        //        n++;
-        //    }
-
-        //    var endTime = DateTime.Now;
-
-        //    log.Info("--------------------------------------------------");
-        //    log.Info("Summary");
-        //    log.Info("--------------------------------------------------");
-        //    log.Info($"Success : {success}");
-        //    log.Info($"Failed  : {fail}");
-
-        //    if (failedStocks.Any())
-        //    {
-        //        log.Info("Failed Stock List:");
-        //        foreach (var s in failedStocks)
-        //            log.Info($"- {s}");
-        //    }
-
-        //    log.Info($"Total Time: {endTime - startTime}");
-        //    log.Info($"EndTime  : {endTime}");
-        //    log.Info("==================================================");
-
-        //    await _hub.Clients.All.SendAsync("Progress", "全部股票更新完成");
-        //}
-
-
         private static DateTime ParseRocDate(string rocDate)
         {
             rocDate = rocDate.Trim();

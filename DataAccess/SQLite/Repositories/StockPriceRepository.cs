@@ -19,6 +19,7 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
             _connectionString = configuration.GetConnectionString("Sqlite");
             _dbPath = "stock.db";
             EnsureTable();
+            EnsureDividendTable();
         }
 
         public async Task<List<StockDailyPrice>> GetByQueryAsync(Query query)
@@ -166,6 +167,83 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
 
             tx.Commit();
         }
+        public void SaveDividendToDb(List<StockDividend> list)
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            conn.Open();
+
+            using var tx = conn.BeginTransaction();
+
+            foreach (var item in list)
+            {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText =
+                """
+                INSERT OR REPLACE INTO StockDividend
+                (
+                    StockId, Date, Year,
+                    StockEarningsDistribution, StockStatutorySurplus, StockExDividendTradingDate,
+                    TotalEmployeeStockDividend, TotalEmployeeStockDividendAmount,
+                    RatioOfEmployeeStockDividendOfTotal, RatioOfEmployeeStockDividend,
+                    CashEarningsDistribution, CashStatutorySurplus,
+                    CashExDividendTradingDate, CashDividendPaymentDate,
+                    TotalEmployeeCashDividend, TotalNumberOfCashCapitalIncrease,
+                    CashIncreaseSubscriptionRate, CashIncreaseSubscriptionPrice,
+                    RemunerationOfDirectorsAndSupervisors,
+                    ParticipateDistributionOfTotalShares,
+                    AnnouncementDate, AnnouncementTime
+                )
+                VALUES
+                (
+                    @StockId, @Date, @Year,
+                    @StockEarningsDistribution, @StockStatutorySurplus, @StockExDividendTradingDate,
+                    @TotalEmployeeStockDividend, @TotalEmployeeStockDividendAmount,
+                    @RatioOfEmployeeStockDividendOfTotal, @RatioOfEmployeeStockDividend,
+                    @CashEarningsDistribution, @CashStatutorySurplus,
+                    @CashExDividendTradingDate, @CashDividendPaymentDate,
+                    @TotalEmployeeCashDividend, @TotalNumberOfCashCapitalIncrease,
+                    @CashIncreaseSubscriptionRate, @CashIncreaseSubscriptionPrice,
+                    @RemunerationOfDirectorsAndSupervisors,
+                    @ParticipateDistributionOfTotalShares,
+                    @AnnouncementDate, @AnnouncementTime
+                );
+                """;
+
+                cmd.Parameters.AddWithValue("@StockId", item.StockId);
+                cmd.Parameters.AddWithValue("@Date", item.Date.ToString("yyyy-MM-dd"));
+                cmd.Parameters.AddWithValue("@Year", DbValue(item.Year));
+
+                cmd.Parameters.AddWithValue("@StockEarningsDistribution", DbValue(item.StockEarningsDistribution));
+                cmd.Parameters.AddWithValue("@StockStatutorySurplus", DbValue(item.StockStatutorySurplus));
+                cmd.Parameters.AddWithValue("@StockExDividendTradingDate", DbValue(item.StockExDividendTradingDate));
+
+                cmd.Parameters.AddWithValue("@TotalEmployeeStockDividend", DbValue(item.TotalEmployeeStockDividend));
+                cmd.Parameters.AddWithValue("@TotalEmployeeStockDividendAmount", DbValue(item.TotalEmployeeStockDividendAmount));
+                cmd.Parameters.AddWithValue("@RatioOfEmployeeStockDividendOfTotal", DbValue(item.RatioOfEmployeeStockDividendOfTotal));
+                cmd.Parameters.AddWithValue("@RatioOfEmployeeStockDividend", DbValue(item.RatioOfEmployeeStockDividend));
+
+                cmd.Parameters.AddWithValue("@CashEarningsDistribution", DbValue(item.CashEarningsDistribution));
+                cmd.Parameters.AddWithValue("@CashStatutorySurplus", DbValue(item.CashStatutorySurplus));
+                cmd.Parameters.AddWithValue("@CashExDividendTradingDate", DbValue(item.CashExDividendTradingDate));
+                cmd.Parameters.AddWithValue("@CashDividendPaymentDate", DbValue(item.CashDividendPaymentDate));
+
+                cmd.Parameters.AddWithValue("@TotalEmployeeCashDividend", DbValue(item.TotalEmployeeCashDividend));
+                cmd.Parameters.AddWithValue("@TotalNumberOfCashCapitalIncrease", DbValue(item.TotalNumberOfCashCapitalIncrease));
+                cmd.Parameters.AddWithValue("@CashIncreaseSubscriptionRate", DbValue(item.CashIncreaseSubscriptionRate));
+                cmd.Parameters.AddWithValue("@CashIncreaseSubscriptionPrice",   DbValue(item.CashIncreaseSubscriptionPrice));
+
+                cmd.Parameters.AddWithValue("@RemunerationOfDirectorsAndSupervisors", DbValue(item.RemunerationOfDirectorsAndSupervisors));
+                cmd.Parameters.AddWithValue("@ParticipateDistributionOfTotalShares", DbValue(item.ParticipateDistributionOfTotalShares));
+
+                cmd.Parameters.AddWithValue("@AnnouncementDate", DbValue(item.AnnouncementDate));
+                cmd.Parameters.AddWithValue("@AnnouncementTime", DbValue(item.AnnouncementTime));
+
+                cmd.ExecuteNonQuery();
+            }
+
+            tx.Commit();
+        }
+
         private void EnsureTable()
         {
             using var conn = new SqliteConnection($"Data Source={_dbPath}");
@@ -191,6 +269,51 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                 """;
             cmd.ExecuteNonQuery();
         }
+        private void EnsureDividendTable()
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            conn.Open();
+
+            var cmd = conn.CreateCommand();
+            cmd.CommandText =
+            """
+            CREATE TABLE IF NOT EXISTS StockDividend (
+                StockId TEXT NOT NULL,
+                Date TEXT NOT NULL,
+                Year TEXT NOT NULL,
+
+                StockEarningsDistribution REAL,
+                StockStatutorySurplus REAL,
+                StockExDividendTradingDate TEXT,
+
+                TotalEmployeeStockDividend REAL,
+                TotalEmployeeStockDividendAmount REAL,
+                RatioOfEmployeeStockDividendOfTotal REAL,
+                RatioOfEmployeeStockDividend REAL,
+
+                CashEarningsDistribution REAL,
+                CashStatutorySurplus REAL,
+                CashExDividendTradingDate TEXT,
+                CashDividendPaymentDate TEXT,
+
+                TotalEmployeeCashDividend INTEGER,
+                TotalNumberOfCashCapitalIncrease REAL,
+                CashIncreaseSubscriptionRate REAL,
+                CashIncreaseSubscriptionPrice REAL,
+
+                RemunerationOfDirectorsAndSupervisors INTEGER,
+                ParticipateDistributionOfTotalShares REAL,
+
+                AnnouncementDate TEXT,
+                AnnouncementTime TEXT,
+
+                PRIMARY KEY (StockId, Date)
+            );
+            """;
+
+            cmd.ExecuteNonQuery();
+        }
+
         public async Task<StockInfoDto?> GetStockInfoAsync(string stockId)
         {
             await using var conn = new SqliteConnection(_connectionString);
@@ -249,6 +372,19 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                 result.Add(reader.GetInt32(0).ToString());
             }
             return result;
+        }
+        string? EmptyToNull(string? s)
+            => string.IsNullOrWhiteSpace(s) ? null : s;
+
+        int ParseTwYear(string year)
+        {
+            // 98年 → 2009
+            var n = int.Parse(year.Replace("年", ""));
+            return n + 1911;
+        }
+        private static object DbValue(object? value)
+        {
+            return value ?? DBNull.Value;
         }
 
     }

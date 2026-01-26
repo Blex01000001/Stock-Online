@@ -23,6 +23,8 @@ builder.Services.AddScoped<IStockPriceUpdateService, StockPriceUpdateService>();
 builder.Services.AddScoped<IROILineChartService, ROILineChartService>();
 builder.Services.AddScoped<IKLineChartService, KLineChartService>();
 builder.Services.AddScoped<IMovingAverageCalculator, MovingAverageCalculator>();
+builder.Services.AddScoped<IStockDividendUpdateService, StockDividendUpdateService>();
+
 
 
 // 註冊 CORS 服務，這裡先定義一個全開的 Policy
