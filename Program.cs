@@ -18,7 +18,7 @@ builder.Services.AddSwaggerGen();
 //    new StockDailyPriceService("stock.db")
 //);
 builder.Services.AddSignalR();
-builder.Services.AddScoped<IStockPriceRepository, StockPriceRepository>();
+builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<IStockPriceUpdateService, StockPriceUpdateService>();
 builder.Services.AddScoped<IROILineChartService, ROILineChartService>();
 builder.Services.AddScoped<IKLineChartService, KLineChartService>();

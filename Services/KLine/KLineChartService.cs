@@ -12,10 +12,10 @@ namespace Stock_Online.Services.KLine
 {
     public class KLineChartService : IKLineChartService
     {
-        private readonly IStockPriceRepository _stockDailyrepo;
+        private readonly IStockRepository _stockDailyrepo;
         private readonly IMovingAverageCalculator _MAcalculator;
 
-        public KLineChartService(IStockPriceRepository repo, IMovingAverageCalculator mAcalculator)
+        public KLineChartService(IStockRepository repo, IMovingAverageCalculator mAcalculator)
         {
             this._stockDailyrepo = repo;
             this._MAcalculator = mAcalculator;
@@ -29,12 +29,12 @@ namespace Stock_Online.Services.KLine
         )
         {
             Query query = StockDailyPriceQueryBuilder.Build(stockId, null, start, end);
-            List<StockDailyPrice> prices = (await _stockDailyrepo.GetByQueryAsync(query))
+            List<StockDailyPrice> prices = (await _stockDailyrepo.GetPriceByQueryAsync(query))
                 .OrderBy(x => x.TradeDate)
                 .ToList();
 
             Query queryAll = StockDailyPriceQueryBuilder.Build(stockId, null, "20100101", end);
-            List<StockDailyPrice> pricesAll = (await _stockDailyrepo.GetByQueryAsync(queryAll))
+            List<StockDailyPrice> pricesAll = (await _stockDailyrepo.GetPriceByQueryAsync(queryAll))
                 .OrderBy(x => x.TradeDate)
                 .ToList();
 
@@ -43,42 +43,14 @@ namespace Stock_Online.Services.KLine
 
             Dictionary<int, List<decimal?>> maMap = _MAcalculator.Calculate(pricesAll);
 
-            //var points = prices.Select(x => new KLinePointDto
-            //{
-            //    Date = x.TradeDate.ToString("yyyy-MM-dd"),
-            //    Value = new[]
-            //    {
-            //    x.OpenPrice,
-            //    x.ClosePrice,
-            //    x.LowPrice,
-            //    x.HighPrice
-            //},
-            //    Volume = x.Volume
-            //}).ToList();
-
-            //var closes = prices.Select(x => x.ClosePrice).ToList();
-
-            //var maLines = MA_DAYS.Select(ma =>
-            //    new MALineDto
-            //    {
-            //        Name = $"MA{ma}",
-            //        Values = CalcMA(closes, ma)
-            //    }
-            //).ToList();
             return new List<KLineChartDto> { new KLineChartBuilder(stockId, pricesAll, index, maMap, false).CreateSingle() };
-            //return new KLineChartDto
-            //{
-            //    StockId = stockId,
-            //    Points = points,
-            //    MALines = maLines
-            //};
         }
         public async Task<List<KLineChartDto>> GetKPatternLineAsync(string stockId, CandlePattern candlePattern)
         {
             Console.WriteLine($"Get K Line: {stockId}");
             Query query = StockDailyPriceQueryBuilder.Build(stockId, null, "20200101", "20261231");
 
-            List<StockDailyPrice> prices = (await _stockDailyrepo.GetByQueryAsync(query))
+            List<StockDailyPrice> prices = (await _stockDailyrepo.GetPriceByQueryAsync(query))
                 .OrderBy(x => x.TradeDate)
                 .ToList();
 

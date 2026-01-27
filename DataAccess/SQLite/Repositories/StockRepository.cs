@@ -9,20 +9,19 @@ using System.Globalization;
 
 namespace Stock_Online.DataAccess.SQLite.Repositories
 {
-    public class StockPriceRepository : IStockPriceRepository
+    public class StockRepository : IStockRepository
     {
         private readonly string _dbPath;
         private readonly string _connectionString;
         private readonly SqliteCompiler _compiler = new();
-        public StockPriceRepository(IConfiguration configuration)
+        public StockRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("Sqlite");
             _dbPath = "stock.db";
             EnsureTable();
             EnsureDividendTable();
         }
-
-        public async Task<List<StockDailyPrice>> GetByQueryAsync(Query query)
+        public async Task<List<StockDailyPrice>> GetPriceByQueryAsync(Query query)
         {
             var result = new List<StockDailyPrice>();
 
@@ -72,8 +71,7 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
 
             return result;
         }
-
-        public async Task<List<StockDailyPrice>> GetByStockIdAsync(string stockId)
+        public async Task<List<StockDailyPrice>> GetPriceByStockIdAsync(string stockId)
         {
             var list = new List<StockDailyPrice>();
 
@@ -131,6 +129,141 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
             }
             return list;
         }
+        public async Task<List<StockDividend>> GetDividendByQueryAsync(Query query)
+        {
+            var result = new List<StockDividend>();
+
+            // 1️⃣ 編譯 SqlKata → SQL + Parameters
+            var compiled = _compiler.Compile(query);
+
+            await using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync();
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = compiled.Sql;
+
+            // 2️⃣ 參數綁定
+            foreach (var kv in compiled.NamedBindings)
+            {
+                cmd.Parameters.AddWithValue(kv.Key, kv.Value ?? DBNull.Value);
+            }
+
+            // 3️⃣ Execute + Mapping
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                result.Add(new StockDividend
+                {
+                    StockId = reader.GetString(reader.GetOrdinal("StockId")),
+
+                    Date = DateTime.ParseExact(
+                        reader.GetString(reader.GetOrdinal("Date")),
+                        "yyyy-MM-dd",
+                        CultureInfo.InvariantCulture
+                    ),
+
+                    Year = reader.GetString(reader.GetOrdinal("Year")),
+
+                    StockEarningsDistribution =
+                        reader.IsDBNull(reader.GetOrdinal("StockEarningsDistribution"))
+                            ? null
+                            : reader.GetDecimal(reader.GetOrdinal("StockEarningsDistribution")),
+
+                    StockStatutorySurplus =
+                        reader.IsDBNull(reader.GetOrdinal("StockStatutorySurplus"))
+                            ? null
+                            : reader.GetDecimal(reader.GetOrdinal("StockStatutorySurplus")),
+
+                    StockExDividendTradingDate =
+                        reader.IsDBNull(reader.GetOrdinal("StockExDividendTradingDate"))
+                            ? null
+                            : reader.GetString(reader.GetOrdinal("StockExDividendTradingDate")),
+
+                    TotalEmployeeStockDividend =
+                        reader.IsDBNull(reader.GetOrdinal("TotalEmployeeStockDividend"))
+                            ? null
+                            : reader.GetDecimal(reader.GetOrdinal("TotalEmployeeStockDividend")),
+
+                    TotalEmployeeStockDividendAmount =
+                        reader.IsDBNull(reader.GetOrdinal("TotalEmployeeStockDividendAmount"))
+                            ? null
+                            : reader.GetDecimal(reader.GetOrdinal("TotalEmployeeStockDividendAmount")),
+
+                    RatioOfEmployeeStockDividendOfTotal =
+                        reader.IsDBNull(reader.GetOrdinal("RatioOfEmployeeStockDividendOfTotal"))
+                            ? null
+                            : reader.GetDecimal(reader.GetOrdinal("RatioOfEmployeeStockDividendOfTotal")),
+
+                    RatioOfEmployeeStockDividend =
+                        reader.IsDBNull(reader.GetOrdinal("RatioOfEmployeeStockDividend"))
+                            ? null
+                            : reader.GetDecimal(reader.GetOrdinal("RatioOfEmployeeStockDividend")),
+
+                    CashEarningsDistribution =
+                        reader.IsDBNull(reader.GetOrdinal("CashEarningsDistribution"))
+                            ? null
+                            : reader.GetDecimal(reader.GetOrdinal("CashEarningsDistribution")),
+
+                    CashStatutorySurplus =
+                        reader.IsDBNull(reader.GetOrdinal("CashStatutorySurplus"))
+                            ? null
+                            : reader.GetDecimal(reader.GetOrdinal("CashStatutorySurplus")),
+
+                    CashExDividendTradingDate =
+                        reader.IsDBNull(reader.GetOrdinal("CashExDividendTradingDate"))
+                            ? null
+                            : reader.GetString(reader.GetOrdinal("CashExDividendTradingDate")),
+
+                    CashDividendPaymentDate =
+                        reader.IsDBNull(reader.GetOrdinal("CashDividendPaymentDate"))
+                            ? null
+                            : reader.GetString(reader.GetOrdinal("CashDividendPaymentDate")),
+
+                    TotalEmployeeCashDividend =
+                        reader.IsDBNull(reader.GetOrdinal("TotalEmployeeCashDividend"))
+                            ? null
+                            : reader.GetInt32(reader.GetOrdinal("TotalEmployeeCashDividend")),
+
+                    TotalNumberOfCashCapitalIncrease =
+                        reader.IsDBNull(reader.GetOrdinal("TotalNumberOfCashCapitalIncrease"))
+                            ? null
+                            : reader.GetDecimal(reader.GetOrdinal("TotalNumberOfCashCapitalIncrease")),
+
+                    CashIncreaseSubscriptionRate =
+                        reader.IsDBNull(reader.GetOrdinal("CashIncreaseSubscriptionRate"))
+                            ? null
+                            : reader.GetDecimal(reader.GetOrdinal("CashIncreaseSubscriptionRate")),
+
+                    CashIncreaseSubscriptionPrice =
+                        reader.IsDBNull(reader.GetOrdinal("CashIncreaseSubscriptionPrice"))
+                            ? null
+                            : reader.GetDecimal(reader.GetOrdinal("CashIncreaseSubscriptionPrice")),
+
+                    RemunerationOfDirectorsAndSupervisors =
+                        reader.IsDBNull(reader.GetOrdinal("RemunerationOfDirectorsAndSupervisors"))
+                            ? null
+                            : reader.GetInt32(reader.GetOrdinal("RemunerationOfDirectorsAndSupervisors")),
+
+                    ParticipateDistributionOfTotalShares =
+                        reader.IsDBNull(reader.GetOrdinal("ParticipateDistributionOfTotalShares"))
+                            ? null
+                            : reader.GetDecimal(reader.GetOrdinal("ParticipateDistributionOfTotalShares")),
+
+                    AnnouncementDate =
+                        reader.IsDBNull(reader.GetOrdinal("AnnouncementDate"))
+                            ? null
+                            : reader.GetString(reader.GetOrdinal("AnnouncementDate")),
+
+                    AnnouncementTime =
+                        reader.IsDBNull(reader.GetOrdinal("AnnouncementTime"))
+                            ? null
+                            : reader.GetString(reader.GetOrdinal("AnnouncementTime"))
+                });
+            }
+
+            return result;
+        }
+
         public void SaveToDb(List<StockDailyPrice> list)
         {
             using var conn = new SqliteConnection($"Data Source={_dbPath}");
@@ -243,7 +376,6 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
 
             tx.Commit();
         }
-
         private void EnsureTable()
         {
             using var conn = new SqliteConnection($"Data Source={_dbPath}");
@@ -313,7 +445,6 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
 
             cmd.ExecuteNonQuery();
         }
-
         public async Task<StockInfoDto?> GetStockInfoAsync(string stockId)
         {
             await using var conn = new SqliteConnection(_connectionString);

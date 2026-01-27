@@ -9,10 +9,10 @@ namespace Stock_Online.Services.Update
 {
     public class StockDividendUpdateService : IStockDividendUpdateService
     {
-        private readonly IStockPriceRepository _repo;
+        private readonly IStockRepository _repo;
         private readonly IHubContext<StockUpdateHub> _hub;
 
-        public StockDividendUpdateService(IStockPriceRepository repo, IHubContext<StockUpdateHub> hub)
+        public StockDividendUpdateService(IStockRepository repo, IHubContext<StockUpdateHub> hub)
         {
             _repo = repo;
             _hub = hub;

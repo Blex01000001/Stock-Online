@@ -9,11 +9,11 @@ namespace Stock_Online.Services.ROILine
 {
     public class ROILineChartService : IROILineChartService
     {
-        private readonly IStockPriceRepository _repo;
+        private readonly IStockRepository _repo;
         private int _year;
         private List<StockDailyPrice> _orderedDailyPrices;
 
-        public ROILineChartService(IStockPriceRepository repo)
+        public ROILineChartService(IStockRepository repo)
         {
             _repo = repo;
         }
@@ -25,7 +25,7 @@ namespace Stock_Online.Services.ROILine
             Query query = new Query("StockDailyPrice")
                 .Where("StockId", stockId);
 
-            List<StockDailyPrice> dailyPrices = await _repo.GetByQueryAsync(query);
+            List<StockDailyPrice> dailyPrices = await _repo.GetPriceByQueryAsync(query);
             //List<StockDailyPrice> dailyPrices = await _repo.GetByStockIdAsync(stockId);
 
             _orderedDailyPrices = dailyPrices.OrderByDescending(x => x.TradeDate).ToList();

@@ -4,7 +4,7 @@ namespace Stock_Online.DTOs
 {
     public class RatingModel
     {
-        private readonly IStockPriceRepository _repo;
+        private readonly IStockRepository _repo;
         public DateTime TradeDate { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }

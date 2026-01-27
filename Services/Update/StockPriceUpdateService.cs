@@ -13,10 +13,10 @@ namespace Stock_Online.Services.Update
 
     public class StockPriceUpdateService : IStockPriceUpdateService
     {
-        private readonly IStockPriceRepository _repo;
+        private readonly IStockRepository _repo;
         private readonly IHubContext<StockUpdateHub> _hub;
 
-        public StockPriceUpdateService(IStockPriceRepository repo, IHubContext<StockUpdateHub> hub)
+        public StockPriceUpdateService(IStockRepository repo, IHubContext<StockUpdateHub> hub)
         {
             _repo = repo;
             _hub = hub;
@@ -26,7 +26,7 @@ namespace Stock_Online.Services.Update
             if (string.IsNullOrWhiteSpace(stockId))
                 throw new ArgumentException("StockId 不可為空");
 
-            var re = await _repo.GetByStockIdAsync(stockId);
+            var re = await _repo.GetPriceByStockIdAsync(stockId);
             return re;
         }
         public async Task FetchAndSaveAsync(int year, string stockId)
