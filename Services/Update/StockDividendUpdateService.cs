@@ -4,6 +4,8 @@ using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
 using Stock_Online.Hubs;
 using System;
+using SqlKata;
+using Stock_Online.Services.KLine.Queries;
 
 namespace Stock_Online.Services.Update
 {
@@ -17,11 +19,13 @@ namespace Stock_Online.Services.Update
             _repo = repo;
             _hub = hub;
         }
+
         public async Task FetchAndSaveAllStockAsync()
         {
             var startTime = DateTime.Now;
             var stockIds = await _repo.GetAllStockIdsAsync();
             //List<string> stockIds = stockIds1.Skip(1010).ToList();
+            //List<string> stockIds = new List<string> {"0050", "0056", "006208", "00878"};
             int total = stockIds.Count;
             int success = 0;
             int fail = 0;

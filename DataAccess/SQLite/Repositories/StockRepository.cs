@@ -222,7 +222,7 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                     TotalEmployeeCashDividend =
                         reader.IsDBNull(reader.GetOrdinal("TotalEmployeeCashDividend"))
                             ? null
-                            : reader.GetInt32(reader.GetOrdinal("TotalEmployeeCashDividend")),
+                            : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("TotalEmployeeCashDividend"))),
 
                     TotalNumberOfCashCapitalIncrease =
                         reader.IsDBNull(reader.GetOrdinal("TotalNumberOfCashCapitalIncrease"))
@@ -242,7 +242,7 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                     RemunerationOfDirectorsAndSupervisors =
                         reader.IsDBNull(reader.GetOrdinal("RemunerationOfDirectorsAndSupervisors"))
                             ? null
-                            : reader.GetInt32(reader.GetOrdinal("RemunerationOfDirectorsAndSupervisors")),
+                            : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("RemunerationOfDirectorsAndSupervisors"))),
 
                     ParticipateDistributionOfTotalShares =
                         reader.IsDBNull(reader.GetOrdinal("ParticipateDistributionOfTotalShares"))

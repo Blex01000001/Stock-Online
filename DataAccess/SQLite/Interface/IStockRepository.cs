@@ -8,7 +8,7 @@ namespace Stock_Online.DataAccess.SQLite.Interface
     {
         Task<List<StockDailyPrice>> GetPriceByStockIdAsync(string stockId);
         Task<List<StockDailyPrice>> GetPriceByQueryAsync(Query query);
-        public Task<List<StockDividend>> GetDividendByQueryAsync(Query query);
+        Task<List<StockDividend>> GetDividendByQueryAsync(Query query);
         Task<StockInfoDto?> GetStockInfoAsync(string stockId);
         Task<List<string>> GetAllStockIdsAsync();
         void SaveToDb(List<StockDailyPrice> list);
