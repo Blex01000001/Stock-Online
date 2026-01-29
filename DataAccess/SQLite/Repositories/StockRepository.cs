@@ -4,6 +4,7 @@ using SqlKata.Compilers;
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
 using Stock_Online.Domain.Entities.Stock_Online.DTOs;
+using Stock_Online.Domain.Enums;
 using Stock_Online.DTOs;
 using System.Globalization;
 
@@ -20,56 +21,6 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
             _dbPath = "stock.db";
             EnsureTable();
             EnsureDividendTable();
-        }
-        public async Task<List<StockDailyPrice>> GetPriceByQueryAsync(Query query)
-        {
-            var result = new List<StockDailyPrice>();
-
-            // 1️⃣ 編譯 SqlKata → SQL + Parameters
-            var compiled = _compiler.Compile(query);
-
-            await using var conn = new SqliteConnection(_connectionString);
-            await conn.OpenAsync();
-
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = compiled.Sql;
-
-            // 2️⃣ 參數綁定（這一步很關鍵）
-            foreach (var kv in compiled.NamedBindings)
-            {
-                cmd.Parameters.AddWithValue(kv.Key, kv.Value ?? DBNull.Value);
-            }
-
-            // 3️⃣ Execute + Mapping
-            await using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                result.Add(new StockDailyPrice
-                {
-                    StockId = reader.GetString(reader.GetOrdinal("StockId")),
-
-                    TradeDate = DateTime.ParseExact(
-                        reader.GetString(reader.GetOrdinal("TradeDate")),
-                        "yyyy-MM-dd",
-                        CultureInfo.InvariantCulture
-                    ),
-
-                    Volume = reader.IsDBNull(reader.GetOrdinal("Volume")) ? 0 : reader.GetInt64(reader.GetOrdinal("Volume")),
-                    Amount = reader.IsDBNull(reader.GetOrdinal("Amount")) ? 0 : reader.GetInt64(reader.GetOrdinal("Amount")),
-
-                    OpenPrice = reader.IsDBNull(reader.GetOrdinal("OpenPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("OpenPrice")),
-                    HighPrice = reader.IsDBNull(reader.GetOrdinal("HighPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("HighPrice")),
-                    LowPrice = reader.IsDBNull(reader.GetOrdinal("LowPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("LowPrice")),
-                    ClosePrice = reader.IsDBNull(reader.GetOrdinal("ClosePrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("ClosePrice")),
-
-                    PriceChange = reader.IsDBNull(reader.GetOrdinal("PriceChange")) ? 0 : reader.GetDecimal(reader.GetOrdinal("PriceChange")),
-                    TradeCount = reader.IsDBNull(reader.GetOrdinal("TradeCount")) ? 0 : reader.GetInt32(reader.GetOrdinal("TradeCount")),
-
-                    Note = reader.IsDBNull(reader.GetOrdinal("Note")) ? null : reader.GetString(reader.GetOrdinal("Note"))
-                });
-            }
-
-            return result;
         }
         public async Task<List<StockDailyPrice>> GetPriceByStockIdAsync(string stockId)
         {
@@ -128,6 +79,56 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                 });
             }
             return list;
+        }
+        public async Task<List<StockDailyPrice>> GetPriceByQueryAsync(Query query)
+        {
+            var result = new List<StockDailyPrice>();
+
+            // 1️⃣ 編譯 SqlKata → SQL + Parameters
+            var compiled = _compiler.Compile(query);
+
+            await using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync();
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = compiled.Sql;
+
+            // 2️⃣ 參數綁定（這一步很關鍵）
+            foreach (var kv in compiled.NamedBindings)
+            {
+                cmd.Parameters.AddWithValue(kv.Key, kv.Value ?? DBNull.Value);
+            }
+
+            // 3️⃣ Execute + Mapping
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                result.Add(new StockDailyPrice
+                {
+                    StockId = reader.GetString(reader.GetOrdinal("StockId")),
+
+                    TradeDate = DateTime.ParseExact(
+                        reader.GetString(reader.GetOrdinal("TradeDate")),
+                        "yyyy-MM-dd",
+                        CultureInfo.InvariantCulture
+                    ),
+
+                    Volume = reader.IsDBNull(reader.GetOrdinal("Volume")) ? 0 : reader.GetInt64(reader.GetOrdinal("Volume")),
+                    Amount = reader.IsDBNull(reader.GetOrdinal("Amount")) ? 0 : reader.GetInt64(reader.GetOrdinal("Amount")),
+
+                    OpenPrice = reader.IsDBNull(reader.GetOrdinal("OpenPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("OpenPrice")),
+                    HighPrice = reader.IsDBNull(reader.GetOrdinal("HighPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("HighPrice")),
+                    LowPrice = reader.IsDBNull(reader.GetOrdinal("LowPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("LowPrice")),
+                    ClosePrice = reader.IsDBNull(reader.GetOrdinal("ClosePrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("ClosePrice")),
+
+                    PriceChange = reader.IsDBNull(reader.GetOrdinal("PriceChange")) ? 0 : reader.GetDecimal(reader.GetOrdinal("PriceChange")),
+                    TradeCount = reader.IsDBNull(reader.GetOrdinal("TradeCount")) ? 0 : reader.GetInt32(reader.GetOrdinal("TradeCount")),
+
+                    Note = reader.IsDBNull(reader.GetOrdinal("Note")) ? null : reader.GetString(reader.GetOrdinal("Note"))
+                });
+            }
+
+            return result;
         }
         public async Task<List<StockDividend>> GetDividendByQueryAsync(Query query)
         {
@@ -258,6 +259,45 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                         reader.IsDBNull(reader.GetOrdinal("AnnouncementTime"))
                             ? null
                             : reader.GetString(reader.GetOrdinal("AnnouncementTime"))
+                });
+            }
+
+            return result;
+        }
+        public async Task<List<StockCorporateAction>> GetCorporateActionsAsync(string stockId)
+        {
+            var result = new List<StockCorporateAction>();
+
+            await using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync();
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                SELECT
+                    StockId,
+                    ActionType,
+                    ExDate,
+                    Ratio,
+                    CashAmount,
+                    Description
+                FROM StockCorporateAction
+                WHERE StockId = @stockId
+                ORDER BY ExDate DESC
+            ";
+
+            cmd.Parameters.AddWithValue("@stockId", stockId);
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                result.Add(new StockCorporateAction
+                {
+                    StockId = reader.GetString(0),
+                    ActionType = Enum.Parse<CorporateActionType>(reader.GetString(1)),
+                    ExDate = DateTime.Parse(reader.GetString(2)),
+                    Ratio = reader.IsDBNull(3) ? null : reader.GetDecimal(3),
+                    CashAmount = reader.IsDBNull(4) ? null : reader.GetDecimal(4),
+                    Description = reader.IsDBNull(5) ? null : reader.GetString(5)
                 });
             }
 
@@ -497,10 +537,16 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                 ORDER BY 公司代號
             ";
 
+            cmd.CommandText = @"
+                SELECT StockId
+                FROM ETFList
+                ORDER BY StockId
+            ";
+
             await using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                result.Add(reader.GetInt32(0).ToString());
+                result.Add(reader.GetString(0));
             }
             return result;
         }

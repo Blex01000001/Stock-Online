@@ -1,6 +1,7 @@
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.DataAccess.SQLite.Repositories;
 using Stock_Online.Hubs;
+using Stock_Online.Services.Adjustment;
 using Stock_Online.Services.AnnualReview;
 using Stock_Online.Services.KLine;
 using Stock_Online.Services.KLine.Indicators;
@@ -26,6 +27,8 @@ builder.Services.AddScoped<IKLineChartService, KLineChartService>();
 builder.Services.AddScoped<IMovingAverageCalculator, MovingAverageCalculator>();
 builder.Services.AddScoped<IStockDividendUpdateService, StockDividendUpdateService>();
 builder.Services.AddScoped<IStockAnnualReviewService, StockAnnualReviewService>();
+builder.Services.AddScoped<IPriceAdjustmentService, PriceAdjustmentService>();
+builder.Services.AddScoped<IDividendAdjustmentService, DividendAdjustmentService>();
 
 
 // 註冊 CORS 服務，這裡先定義一個全開的 Policy

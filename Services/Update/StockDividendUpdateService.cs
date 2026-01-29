@@ -22,10 +22,9 @@ namespace Stock_Online.Services.Update
 
         public async Task FetchAndSaveAllStockAsync()
         {
-            var startTime = DateTime.Now;
-            var stockIds = await _repo.GetAllStockIdsAsync();
+            DateTime startTime = DateTime.Now;
+            List<string> stockIds = await _repo.GetAllStockIdsAsync();
             //List<string> stockIds = stockIds1.Skip(1010).ToList();
-            //List<string> stockIds = new List<string> {"0050", "0056", "006208", "00878"};
             int total = stockIds.Count;
             int success = 0;
             int fail = 0;
@@ -37,7 +36,7 @@ namespace Stock_Online.Services.Update
 
             for (int i = 0; i < stockIds.Count; i++)
             {
-                var stockId = stockIds[i];
+                string stockId = stockIds[i];
                 int current = i + 1;
 
                 try
@@ -52,7 +51,6 @@ namespace Stock_Online.Services.Update
                         "?dataset=TaiwanStockDividend" +
                         $"&data_id={stockId}" +
                         "&start_date=2010-01-01";
-                    Console.WriteLine($"Update URL: {url}");
 
                     var response =
                         await http.GetFromJsonAsync<FinMindDividendResponse>(url);
