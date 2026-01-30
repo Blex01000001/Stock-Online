@@ -49,15 +49,13 @@ namespace Stock_Online.Services.AnnualReview
                 .Distinct()
                 .OrderBy(y => y);
 
+            Dictionary<int, List<StockDailyPrice>> pricesDic = adjPrices.GroupBy(k => k.TradeDate.Year)
+                .ToDictionary(k => k.Key, value => value.OrderBy(p => p.TradeDate).ToList());
+
             List<StockAnnualReviewDto> result = new List<StockAnnualReviewDto>();
             foreach (var year in years)
             {
-                var yearPrices = adjPrices
-                    .Where(p => p.TradeDate.Year == year)
-                    .OrderBy(p => p.TradeDate)
-                    .ToList();
-
-                if (yearPrices.Count == 0)
+                if (!pricesDic.TryGetValue(year, out List<StockDailyPrice> yearPrices))
                     continue;
 
                 List<StockDividend> yearDividends = adjDividends
@@ -81,11 +79,23 @@ namespace Stock_Online.Services.AnnualReview
                     CashDividend = cashDividend.Value,
                     StockDividend = stockDividend.Value,
                     CapitalGainRate = capitalGainRate,
-                    TotalReturnRate = totalReturnRate.Value
+                    TotalReturnRate = totalReturnRate.Value,
+                    ReturnFiveRate = CalAnnualReturnRate(year, pricesDic, 5),
+                    ReturnTenRate = CalAnnualReturnRate(year, pricesDic, 10),
                 });
             }
 
             return result.OrderByDescending(x => x.Year).ToList();
         }
+        private decimal CalAnnualReturnRate(int thisYear, Dictionary<int, List<StockDailyPrice>> pricesDic, int aveYear)
+        {
+            var ii = thisYear - (aveYear - 1);
+            if (!pricesDic.TryGetValue(thisYear - (aveYear - 1), out List<StockDailyPrice> yearPrices)) return 0;
+
+            var start = pricesDic[thisYear - (aveYear - 1)].First();
+            var end = pricesDic[thisYear].Last();
+            return (decimal)(Math.Pow((double)(end.ClosePrice / start.OpenPrice), 1.0 / aveYear) - 1)*100;
+        }
+
     }
 }

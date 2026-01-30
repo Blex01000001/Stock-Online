@@ -12,5 +12,8 @@
 
         public decimal CapitalGainRate { get; set; }   // %
         public decimal TotalReturnRate { get; set; }   // %
+        public decimal ReturnFiveRate { get; set; }   // %
+        public decimal ReturnTenRate { get; set; }   // %
+
     }
 }

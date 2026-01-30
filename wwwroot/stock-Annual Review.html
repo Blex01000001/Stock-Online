@@ -88,8 +88,8 @@
         .annual-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 26px;
-            line-height: 1.3;
+            font-size: 22px;
+            line-height: 1.2;
         }
 
         /* ===== 表頭 ===== */
@@ -225,6 +225,8 @@
                         <th>股票股利</th>
                         <th>資本利得%</th>
                         <th>含息報酬%</th>
+                        <th>五年年化%</th>
+                        <th>十年年化%</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -236,16 +238,23 @@
                     <td>${r.year}</td>
                     <td>${r.startOpen.toFixed(2)}</td>
                     <td>${r.endClose.toFixed(2)}</td>
-                    <td>${r.cashDividend.toFixed(2)}</td>
-                    <td>${r.stockDividend.toFixed(2)}</td>
+                    <td>${r.cashDividend === 0 ? '-' : r.cashDividend.toFixed(2)}</td>
+                    <td>${r.stockDividend === 0 ? '-' : r.stockDividend.toFixed(2)}</td>
 
                     <td class="${r.capitalGainRate >= 0 ? 'pos' : 'neg'}">
                         ${r.capitalGainRate.toFixed(1)}
                     </td>                
                     <td class="${r.totalReturnRate >= 0 ? 'pos' : 'neg'}">
                         ${r.totalReturnRate.toFixed(1)}
+                    </td>
+                    <td class="${r.returnFiveRate >= 0 ? 'pos' : 'neg'}">
+                        ${r.returnFiveRate === 0 ? '-' : r.returnFiveRate.toFixed(1)}
+                    </td>                
+                    <td class="${r.returnTenRate >= 0 ? 'pos' : 'neg'}">
+                        ${r.returnTenRate === 0 ? '-' : r.returnTenRate.toFixed(1)}
                     </td>                
                 </tr>
+
                 `;
             }
 
