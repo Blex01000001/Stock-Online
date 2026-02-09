@@ -99,10 +99,6 @@ namespace Stock_Online.Services.Update
             await ReportProgressAsync(
                 $"🎉 更新結束 成功:{success} 失敗:{fail} 共:{total}  耗時:{elapsed:mm\\:ss}"
             );
-
-
-
-
         }
         private async Task ReportProgressAsync(string message)
         {

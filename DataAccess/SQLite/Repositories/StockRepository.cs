@@ -21,6 +21,7 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
             _dbPath = "stock.db";
             EnsureTable();
             EnsureDividendTable();
+            EnsureShareholdingTable();
         }
         public async Task<List<StockDailyPrice>> GetPriceByStockIdAsync(string stockId)
         {
@@ -416,6 +417,90 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
 
             tx.Commit();
         }
+        public async Task SaveShareholdingToDb(List<StockShareholding> list)
+        {
+            if (list == null || list.Count == 0) return;
+
+            await using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync();
+
+            await using var tx = await conn.BeginTransactionAsync();
+
+            await using var cmd = conn.CreateCommand();
+            cmd.Transaction = (SqliteTransaction?)tx;
+
+            cmd.CommandText = @"
+                INSERT INTO StockShareholding
+                (
+                    StockId, Date, StockName, InternationalCode,
+                    ForeignInvestmentRemainingShares, ForeignInvestmentShares,
+                    ForeignInvestmentRemainRatio, ForeignInvestmentSharesRatio,
+                    ForeignInvestmentUpperLimitRatio, ChineseInvestmentUpperLimitRatio,
+                    NumberOfSharesIssued, RecentlyDeclareDate, Note
+                )
+                VALUES
+                (
+                    @StockId, @Date, @StockName, @InternationalCode,
+                    @ForeignInvestmentRemainingShares, @ForeignInvestmentShares,
+                    @ForeignInvestmentRemainRatio, @ForeignInvestmentSharesRatio,
+                    @ForeignInvestmentUpperLimitRatio, @ChineseInvestmentUpperLimitRatio,
+                    @NumberOfSharesIssued, @RecentlyDeclareDate, @Note
+                )
+                ON CONFLICT(StockId, Date) DO UPDATE SET
+                    StockName = excluded.StockName,
+                    InternationalCode = excluded.InternationalCode,
+                    ForeignInvestmentRemainingShares = excluded.ForeignInvestmentRemainingShares,
+                    ForeignInvestmentShares = excluded.ForeignInvestmentShares,
+                    ForeignInvestmentRemainRatio = excluded.ForeignInvestmentRemainRatio,
+                    ForeignInvestmentSharesRatio = excluded.ForeignInvestmentSharesRatio,
+                    ForeignInvestmentUpperLimitRatio = excluded.ForeignInvestmentUpperLimitRatio,
+                    ChineseInvestmentUpperLimitRatio = excluded.ChineseInvestmentUpperLimitRatio,
+                    NumberOfSharesIssued = excluded.NumberOfSharesIssued,
+                    RecentlyDeclareDate = excluded.RecentlyDeclareDate,
+                    Note = excluded.Note;
+                ";
+
+            // 先建參數（避免迴圈一直 Add）
+            var pStockId = cmd.CreateParameter(); pStockId.ParameterName = "@StockId"; cmd.Parameters.Add(pStockId);
+            var pDate = cmd.CreateParameter(); pDate.ParameterName = "@Date"; cmd.Parameters.Add(pDate);
+            var pStockName = cmd.CreateParameter(); pStockName.ParameterName = "@StockName"; cmd.Parameters.Add(pStockName);
+            var pInternationalCode = cmd.CreateParameter(); pInternationalCode.ParameterName = "@InternationalCode"; cmd.Parameters.Add(pInternationalCode);
+
+            var pFirs = cmd.CreateParameter(); pFirs.ParameterName = "@ForeignInvestmentRemainingShares"; cmd.Parameters.Add(pFirs);
+            var pFis = cmd.CreateParameter(); pFis.ParameterName = "@ForeignInvestmentShares"; cmd.Parameters.Add(pFis);
+            var pFirRatio = cmd.CreateParameter(); pFirRatio.ParameterName = "@ForeignInvestmentRemainRatio"; cmd.Parameters.Add(pFirRatio);
+            var pFisRatio = cmd.CreateParameter(); pFisRatio.ParameterName = "@ForeignInvestmentSharesRatio"; cmd.Parameters.Add(pFisRatio);
+            var pFiUpper = cmd.CreateParameter(); pFiUpper.ParameterName = "@ForeignInvestmentUpperLimitRatio"; cmd.Parameters.Add(pFiUpper);
+            var pCnUpper = cmd.CreateParameter(); pCnUpper.ParameterName = "@ChineseInvestmentUpperLimitRatio"; cmd.Parameters.Add(pCnUpper);
+
+            var pIssued = cmd.CreateParameter(); pIssued.ParameterName = "@NumberOfSharesIssued"; cmd.Parameters.Add(pIssued);
+            var pDeclare = cmd.CreateParameter(); pDeclare.ParameterName = "@RecentlyDeclareDate"; cmd.Parameters.Add(pDeclare);
+            var pNote = cmd.CreateParameter(); pNote.ParameterName = "@Note"; cmd.Parameters.Add(pNote);
+
+            foreach (var x in list)
+            {
+                pStockId.Value = x.StockId;
+                pDate.Value = x.Date;
+
+                pStockName.Value = (object?)x.StockName ?? DBNull.Value;
+                pInternationalCode.Value = (object?)x.InternationalCode ?? DBNull.Value;
+
+                pFirs.Value = (object?)x.ForeignInvestmentRemainingShares ?? DBNull.Value;
+                pFis.Value = (object?)x.ForeignInvestmentShares ?? DBNull.Value;
+                pFirRatio.Value = (object?)x.ForeignInvestmentRemainRatio ?? DBNull.Value;
+                pFisRatio.Value = (object?)x.ForeignInvestmentSharesRatio ?? DBNull.Value;
+                pFiUpper.Value = (object?)x.ForeignInvestmentUpperLimitRatio ?? DBNull.Value;
+                pCnUpper.Value = (object?)x.ChineseInvestmentUpperLimitRatio ?? DBNull.Value;
+
+                pIssued.Value = (object?)x.NumberOfSharesIssued ?? DBNull.Value;
+                pDeclare.Value = (object?)x.RecentlyDeclareDate ?? DBNull.Value;
+                pNote.Value = (object?)x.Note ?? DBNull.Value;
+
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            await tx.CommitAsync();
+        }
         private void EnsureTable()
         {
             using var conn = new SqliteConnection($"Data Source={_dbPath}");
@@ -485,6 +570,39 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
 
             cmd.ExecuteNonQuery();
         }
+        private void EnsureShareholdingTable()
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            conn.Open();
+
+            var cmd = conn.CreateCommand();
+            cmd.CommandText =
+            """
+            CREATE TABLE IF NOT EXISTS StockShareholding (
+                StockId TEXT NOT NULL,
+                Date TEXT NOT NULL,
+
+                StockName TEXT,
+                InternationalCode TEXT,
+
+                ForeignInvestmentRemainingShares INTEGER,
+                ForeignInvestmentShares INTEGER,
+                ForeignInvestmentRemainRatio REAL,
+                ForeignInvestmentSharesRatio REAL,
+                ForeignInvestmentUpperLimitRatio REAL,
+                ChineseInvestmentUpperLimitRatio REAL,
+                NumberOfSharesIssued INTEGER,
+
+                RecentlyDeclareDate TEXT,
+                Note TEXT,
+
+                PRIMARY KEY (StockId, Date)
+            );
+            """;
+
+            cmd.ExecuteNonQuery();
+        }
+
         public async Task<StockInfoDto?> GetStockInfoAsync(string stockId)
         {
             await using var conn = new SqliteConnection(_connectionString);

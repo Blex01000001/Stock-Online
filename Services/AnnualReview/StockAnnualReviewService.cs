@@ -38,7 +38,7 @@ namespace Stock_Online.Services.AnnualReview
             IReadOnlyList<StockDividend> adjDividends = _dividendAdj.AdjustDividends(dividends, actions);
 
             Query priceQuery = StockDailyPriceQueryBuilder.Build(
-                stockId, null, "20000101", "20501231");
+                stockId, null, "19110101", "20501231");
             List<StockDailyPrice> prices = (await _repo.GetPriceByQueryAsync(priceQuery))
                 .OrderBy(x => x.TradeDate)
                 .ToList();

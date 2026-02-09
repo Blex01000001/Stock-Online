@@ -12,12 +12,16 @@ namespace Stock_Online.Controllers
     {
         private readonly IStockPriceUpdateService _priceUpdateService;
         private readonly IStockDividendUpdateService _dividendUpdateService;
+        private readonly IStockShareholdingUpdateService _shareholdingUpdateService;
         public StockUpdateController(
             IStockPriceUpdateService priceUpdateService,
-            IStockDividendUpdateService dividendUpdateService)
+            IStockDividendUpdateService dividendUpdateService,
+            IStockShareholdingUpdateService shareholdingUpdateService
+            )
         {
             this._priceUpdateService = priceUpdateService;
             this._dividendUpdateService = dividendUpdateService;
+            this._shareholdingUpdateService = shareholdingUpdateService;
         }
         // 5. 接收 HTML
         [HttpGet("")]
@@ -78,6 +82,13 @@ namespace Stock_Online.Controllers
             Console.WriteLine($"Update All Dividend");
             _ = Task.Run(() => _dividendUpdateService.FetchAndSaveAllStockAsync());
             return Ok($"Start 所有股票股利資訊");
+        }
+        [HttpPost("update/Shareholding/single-stock")]
+        public async Task<IActionResult> UpdateShareholding([FromQuery] string stockId)
+        {
+            Console.WriteLine($"Update Share Holding");
+            _ = Task.Run(() => _shareholdingUpdateService.FetchAndSaveAsync(stockId));
+            return Ok($"Start Share Holding");
         }
 
     }

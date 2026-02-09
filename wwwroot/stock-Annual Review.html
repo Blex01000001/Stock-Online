@@ -88,7 +88,7 @@
         .annual-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 22px;
+            font-size: 16px;
             line-height: 1.2;
         }
 
@@ -97,7 +97,8 @@
             background-color: #f0f0f0;
             /* 標題列固定顏色 */
             font-weight: 600;
-            padding: 8px 6px;
+            padding: 4px 0px;
+            /*  */
             text-align: center;
             border-bottom: 1px solid #ccc;
         }
@@ -218,15 +219,19 @@
             <table class="annual-table">
                 <thead>
                     <tr>
-                        <th>年度</th>
-                        <th>年初開盤</th>
-                        <th>年尾收盤</th>
-                        <th>現金股利</th>
-                        <th>股票股利</th>
-                        <th>資本利得%</th>
-                        <th>含息報酬%</th>
-                        <th>五年年化%</th>
-                        <th>十年年化%</th>
+                        <th rowspan="2">年度</th>
+                        <th rowspan="2">年初開盤</th>
+                        <th rowspan="2">年尾收盤</th>
+                        <th rowspan="2">現金股利</th>
+                        <th rowspan="2">股票股利</th>
+                        <th colspan="2">ROI</th>
+                        <th colspan="2">CAGR</th>
+                    </tr>
+                    <tr>
+                        <th>不含息</th>
+                        <th>含息</th>
+                        <th>5年</th>
+                        <th>10年</th>
                     </tr>
                 </thead>
                 <tbody>

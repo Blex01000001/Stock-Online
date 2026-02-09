@@ -121,6 +121,8 @@
             <button onclick="updatePresetStocks()">更新常用股票（單一年）</button>
             <button onclick="updateAllStocks()">更新全部台股股票（單一年）</button>
             <button onclick="updateAllStockDividend()">更新全部股票股利資訊</button>
+            <button onclick="updateShareholding()">更新單一股票外資持股資訊</button>
+
         </div>
     </div>
     <div id="result"></div>
@@ -184,6 +186,28 @@
             catch (err) {
                 console.error(err);
                 appendLog("✖ 更新所有股票股利資訊失敗");
+            }
+        }
+        async function updateShareholding() {
+            const stockId = document.getElementById("stockId").value;
+            if (!stockId) {
+                alert("請輸入股票代號");
+                return;
+            }
+
+            appendLog("開始更新單一股票外資持股資訊");
+
+            try {
+                const res = await fetch(
+                    `${apiBase}/stock/update/Shareholding/single-stock?stockId=${stockId}`,
+                    { method: "POST" }
+                );
+                const text = await res.text();
+                appendLog(text);
+            }
+            catch (err) {
+                console.error(err);
+                appendLog("✖ 更新單一股票外資持股資訊失敗");
             }
         }
 

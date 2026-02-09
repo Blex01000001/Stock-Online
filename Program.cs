@@ -29,6 +29,7 @@ builder.Services.AddScoped<IStockDividendUpdateService, StockDividendUpdateServi
 builder.Services.AddScoped<IStockAnnualReviewService, StockAnnualReviewService>();
 builder.Services.AddScoped<IPriceAdjustmentService, PriceAdjustmentService>();
 builder.Services.AddScoped<IDividendAdjustmentService, DividendAdjustmentService>();
+builder.Services.AddScoped<IStockShareholdingUpdateService, StockShareholdingUpdateService>();
 
 
 // 註冊 CORS 服務，這裡先定義一個全開的 Policy
