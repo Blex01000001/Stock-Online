@@ -2,11 +2,13 @@
 using System.Security.Cryptography.Xml;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Data.Sqlite;
+using SqlKata;
 using Stock_Online.DataAccess;
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
 using Stock_Online.DTOs;
 using Stock_Online.Hubs;
+using Stock_Online.Services.KLine.Queries;
 
 namespace Stock_Online.Services.Update
 {
@@ -26,7 +28,8 @@ namespace Stock_Online.Services.Update
             if (string.IsNullOrWhiteSpace(stockId))
                 throw new ArgumentException("StockId 不可為空");
 
-            var re = await _repo.GetPriceByStockIdAsync(stockId);
+            Query query = StockDailyPriceQueryBuilder.Build(stockId, null, "20000101", "20501231");
+            var re = await _repo.GetPriceByQueryAsync(query);
             return re;
         }
         public async Task FetchAndSaveAsync(int year, string stockId)

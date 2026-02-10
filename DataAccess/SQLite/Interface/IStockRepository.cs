@@ -6,7 +6,6 @@ namespace Stock_Online.DataAccess.SQLite.Interface
 {
     public interface IStockRepository
     {
-        Task<List<StockDailyPrice>> GetPriceByStockIdAsync(string stockId);
         Task<List<StockDailyPrice>> GetPriceByQueryAsync(Query query);
         Task<List<StockDividend>> GetDividendByQueryAsync(Query query);
         Task<List<StockCorporateAction>> GetCorporateActionsAsync(string stockId);

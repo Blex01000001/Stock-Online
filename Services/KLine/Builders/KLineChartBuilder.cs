@@ -21,6 +21,7 @@ namespace Stock_Online.Services.KLine.Builders
             
             if (area)
             {
+                // 以currDayIndex為中心，取前後50天
                 _left = Math.Max(0, currDayIndex - 50);
                 _right = Math.Min(prices.Count - 1, currDayIndex + 50);
             }
@@ -115,9 +116,9 @@ namespace Stock_Online.Services.KLine.Builders
 
             //var closes = _prices.Select(x => x.ClosePrice).ToList();
 
-            var maLines = MA_DAYS.Select(period =>
+            List<MALineDto> maLines = MA_DAYS.Select(period =>
             {
-                var fullMa = _maMap[period];
+                List<decimal?> fullMa = _maMap[period];
 
                 return new MALineDto
                 {
@@ -129,34 +130,25 @@ namespace Stock_Online.Services.KLine.Builders
                 };
             }).ToList();
 
-            var markLines = new List<KLineMarkLineDto>();
+            //var markLines = new List<KLineMarkLineDto>();
 
-            int targetIndex = _index + 20;
+            //int targetIndex = _index + 20;
 
-            if (targetIndex < _prices.Count)
-            {
-                markLines.Add(new KLineMarkLineDto
-                {
-                    Date = _prices[targetIndex].TradeDate.ToString("yyyy-MM-dd"),
-                    Type = "N+20",
-                    Label = "N+20"
-                });
-            }
+            //if (targetIndex < _prices.Count)
+            //{
+            //    markLines.Add(new KLineMarkLineDto
+            //    {
+            //        Date = _prices[targetIndex].TradeDate.ToString("yyyy-MM-dd"),
+            //        Type = "N+20",
+            //        Label = "N+20"
+            //    });
+            //}
             return new KLineChartDto
             {
                 StockId = _stockId,
                 Points = points,
                 MALines = maLines,
-                //Markers = new List<KLineMarkerDto> { new KLineMarkerDto
-                //{
-                //    Date = _prices[_index].TradeDate.ToString("yyyy-MM-dd"),
-                //    Type = "Selected",
-                //    Label = "N"
-                //}},
-                //MarkLines = markLines
             };
-
         }
-
     }
 }

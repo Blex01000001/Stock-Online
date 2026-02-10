@@ -48,6 +48,15 @@ namespace Stock_Online.Controllers
 
             return Ok($"股票 {req.StockId} 已更新完成 ({req.StartYear} ~ {endYear})");
         }
+
+
+        // DailyPrice
+        [HttpGet("{stockId}/daily")]
+        public async Task<IActionResult> GetDailyPrices(string stockId)
+        {
+            var data = await _priceUpdateService.GetDailyPricesAsync(stockId);
+            return Ok(data);
+        }
         [HttpPost("update/price/single-stock")]
         public async Task<IActionResult> UpdateSingle([FromBody] UpdateStockRequest req)
         {
@@ -57,12 +66,6 @@ namespace Stock_Online.Controllers
                 await _priceUpdateService.FetchAndSaveAsync(req.StartYear, req.StockId);
 
             return Ok($"股票 {req.StockId} 已更新完成 ({req.StartYear})");
-        }
-        [HttpGet("{stockId}/daily")]
-        public async Task<IActionResult> GetDailyPrices(string stockId)
-        {
-            var data = await _priceUpdateService.GetDailyPricesAsync(stockId);
-            return Ok(data);
         }
         [HttpPost("update/price/all-stock")]
         public async Task<IActionResult> UpdateAllStock([FromQuery] int year)
@@ -76,13 +79,9 @@ namespace Stock_Online.Controllers
 
             return Ok($"開始更新 {year} 年所有股票");
         }
-        [HttpPost("update/dividend/all-stock")]
-        public async Task<IActionResult> UpdateAll()
-        {
-            Console.WriteLine($"Update All Dividend");
-            _ = Task.Run(() => _dividendUpdateService.FetchAndSaveAllStockAsync());
-            return Ok($"Start 所有股票股利資訊");
-        }
+
+
+        // Shareholding
         [HttpPost("update/Shareholding/single-stock")]
         public async Task<IActionResult> UpdateShareholding([FromQuery] string stockId)
         {
@@ -91,5 +90,14 @@ namespace Stock_Online.Controllers
             return Ok($"Start Share Holding");
         }
 
+
+        // Dividend
+        [HttpPost("update/dividend/all-stock")]
+        public async Task<IActionResult> UpdateAll()
+        {
+            Console.WriteLine($"Update All Dividend");
+            _ = Task.Run(() => _dividendUpdateService.FetchAndSaveAllStockAsync());
+            return Ok($"Start 所有股票股利資訊");
+        }
     }
 }
