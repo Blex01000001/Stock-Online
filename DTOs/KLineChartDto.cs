@@ -1,4 +1,7 @@
-﻿namespace Stock_Online.DTOs
+﻿using Stock_Online.Domain.Entities;
+
+namespace Stock_Online.DTOs
+
 {
     public class KLineChartDto
     {
@@ -13,5 +16,6 @@
         public List<MALineDto> MALines { get; set; } = new();
         public List<KLineMarkerDto> Markers { get; set; } = new();
         public List<KLineMarkLineDto> MarkLines { get; set; } = new();
+        public List<StockShareholding> Shareholdings { get; set; } = new();
     }
 }

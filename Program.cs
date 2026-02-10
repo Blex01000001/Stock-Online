@@ -24,7 +24,7 @@ builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<IStockPriceUpdateService, StockPriceUpdateService>();
 builder.Services.AddScoped<IROILineChartService, ROILineChartService>();
 builder.Services.AddScoped<IKLineChartService, KLineChartService>();
-builder.Services.AddScoped<IMovingAverageCalculator, MovingAverageCalculator>();
+//builder.Services.AddScoped<IMovingAverageCalculator, MovingAverageCalculator>();
 builder.Services.AddScoped<IStockDividendUpdateService, StockDividendUpdateService>();
 builder.Services.AddScoped<IStockAnnualReviewService, StockAnnualReviewService>();
 builder.Services.AddScoped<IPriceAdjustmentService, PriceAdjustmentService>();

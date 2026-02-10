@@ -207,6 +207,82 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
 
             return result;
         }
+        public async Task<List<StockShareholding>> GetShareholdingByQueryAsync(Query query)
+        {
+            var result = new List<StockShareholding>();
+
+            // 1️⃣ 編譯 SqlKata → SQL + Parameters
+            var compiled = _compiler.Compile(query);
+
+            await using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync();
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = compiled.Sql;
+
+            // 2️⃣ 參數綁定
+            foreach (var kv in compiled.NamedBindings)
+            {
+                cmd.Parameters.AddWithValue(kv.Key, kv.Value ?? DBNull.Value);
+            }
+
+            // 3️⃣ Execute + Mapping
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                result.Add(new StockShareholding
+                {
+                    StockId = reader.GetString(reader.GetOrdinal("StockId")),
+                    Date = Convert.ToDateTime(reader.GetString(reader.GetOrdinal("Date"))),
+
+                    StockName = reader.IsDBNull(reader.GetOrdinal("StockName"))
+                        ? null
+                        : reader.GetString(reader.GetOrdinal("StockName")),
+
+                    InternationalCode = reader.IsDBNull(reader.GetOrdinal("InternationalCode"))
+                        ? null
+                        : reader.GetString(reader.GetOrdinal("InternationalCode")),
+
+                    ForeignInvestmentRemainingShares = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentRemainingShares"))
+                        ? null
+                        : Convert.ToInt64(reader.GetValue(reader.GetOrdinal("ForeignInvestmentRemainingShares"))),
+
+                    ForeignInvestmentShares = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentShares"))
+                        ? null
+                        : Convert.ToInt64(reader.GetValue(reader.GetOrdinal("ForeignInvestmentShares"))),
+
+                    ForeignInvestmentRemainRatio = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentRemainRatio"))
+                        ? null
+                        : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ForeignInvestmentRemainRatio"))),
+
+                    ForeignInvestmentSharesRatio = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentSharesRatio"))
+                        ? null
+                        : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ForeignInvestmentSharesRatio"))),
+
+                    ForeignInvestmentUpperLimitRatio = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentUpperLimitRatio"))
+                        ? null
+                        : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ForeignInvestmentUpperLimitRatio"))),
+
+                    ChineseInvestmentUpperLimitRatio = reader.IsDBNull(reader.GetOrdinal("ChineseInvestmentUpperLimitRatio"))
+                        ? null
+                        : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ChineseInvestmentUpperLimitRatio"))),
+
+                    NumberOfSharesIssued = reader.IsDBNull(reader.GetOrdinal("NumberOfSharesIssued"))
+                        ? null
+                        : Convert.ToInt64(reader.GetValue(reader.GetOrdinal("NumberOfSharesIssued"))),
+
+                    RecentlyDeclareDate = reader.IsDBNull(reader.GetOrdinal("RecentlyDeclareDate"))
+                        ? null
+                        : reader.GetString(reader.GetOrdinal("RecentlyDeclareDate")),
+
+                    Note = reader.IsDBNull(reader.GetOrdinal("Note"))
+                        ? null
+                        : reader.GetString(reader.GetOrdinal("Note")),
+                });
+            }
+
+            return result;
+        }
         public async Task<List<StockCorporateAction>> GetCorporateActionsAsync(string stockId)
         {
             var result = new List<StockCorporateAction>();

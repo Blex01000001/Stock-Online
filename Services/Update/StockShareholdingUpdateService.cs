@@ -63,7 +63,7 @@ namespace Stock_Online.Services.Update
             var entities = payload.Data.Select(d => new StockShareholding
             {
                 StockId = d.stock_id,
-                Date = d.date, // 這邊我直接存 yyyy-MM-dd；若你 DB 全部都用 yyyyMMdd，請在此轉換
+                Date = Convert.ToDateTime(d.date),
 
                 StockName = d.stock_name,
                 InternationalCode = d.InternationalCode,

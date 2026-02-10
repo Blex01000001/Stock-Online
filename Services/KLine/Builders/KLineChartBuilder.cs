@@ -1,5 +1,6 @@
 ﻿using Stock_Online.Domain.Entities;
 using Stock_Online.DTOs;
+using Stock_Online.Services.KLine.Indicators;
 using System.Diagnostics;
 
 namespace Stock_Online.Services.KLine.Builders
@@ -13,11 +14,13 @@ namespace Stock_Online.Services.KLine.Builders
         private static readonly int[] MA_DAYS = { 5, 20, 60, 120, 240 };
         private readonly int _left;
         private readonly int _right;
+        private DateTime _date;
+        private List<StockShareholding> _shareholdings;
 
-        public KLineChartBuilder(string stockId, IReadOnlyList<StockDailyPrice> prices, int currDayIndex, Dictionary<int, List<decimal?>> maMap, bool area = true)
+        public KLineChartBuilder(string stockId, IReadOnlyList<StockDailyPrice> prices, int currDayIndex, bool area = true)
         {
             _stockId = stockId;
-            _maMap = maMap;
+            _maMap = MovingAverageCalculator.Calculate(prices);
             
             if (area)
             {
@@ -38,6 +41,7 @@ namespace Stock_Online.Services.KLine.Builders
                 .ToList();
 
             _index = currDayIndex - _left;
+            _date = prices[currDayIndex].TradeDate;
         }
 
         public KLineChartDto Create()
@@ -114,8 +118,6 @@ namespace Stock_Online.Services.KLine.Builders
                 Volume = x.Volume
             }).ToList();
 
-            //var closes = _prices.Select(x => x.ClosePrice).ToList();
-
             List<MALineDto> maLines = MA_DAYS.Select(period =>
             {
                 List<decimal?> fullMa = _maMap[period];
@@ -130,25 +132,19 @@ namespace Stock_Online.Services.KLine.Builders
                 };
             }).ToList();
 
-            //var markLines = new List<KLineMarkLineDto>();
-
-            //int targetIndex = _index + 20;
-
-            //if (targetIndex < _prices.Count)
-            //{
-            //    markLines.Add(new KLineMarkLineDto
-            //    {
-            //        Date = _prices[targetIndex].TradeDate.ToString("yyyy-MM-dd"),
-            //        Type = "N+20",
-            //        Label = "N+20"
-            //    });
-            //}
             return new KLineChartDto
             {
                 StockId = _stockId,
                 Points = points,
                 MALines = maLines,
+                Shareholdings = _shareholdings
             };
+        }
+        public KLineChartBuilder SetHolding(List<StockShareholding> stockShareholdings)
+        {
+            int index = stockShareholdings.IndexOf(stockShareholdings.First(x => x.Date == _date));
+            _shareholdings = stockShareholdings.Skip(index).Take(_prices.Count).ToList();
+            return this;
         }
     }
 }

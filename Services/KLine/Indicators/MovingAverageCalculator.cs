@@ -2,12 +2,12 @@
 
 namespace Stock_Online.Services.KLine.Indicators
 {
-    public class MovingAverageCalculator : IMovingAverageCalculator
+    public class MovingAverageCalculator 
     {
         private static readonly int[] MA_DAYS = { 5, 20, 60, 120, 240 };
-        public Dictionary<int, List<decimal?>> Calculate(List<StockDailyPrice> prices)
+        public static Dictionary<int, List<decimal?>> Calculate(IReadOnlyList<StockDailyPrice> prices)
         {
-            var closes = prices.Select(x => x.ClosePrice).ToList();
+            List<decimal> closes = prices.Select(x => x.ClosePrice).ToList();
 
             Dictionary<int, List<decimal?>> maMap = MA_DAYS.ToDictionary(
                 p => p,
