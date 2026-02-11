@@ -3,6 +3,8 @@ using Stock_Online.Services;
 using Stock_Online.DTOs;
 using Stock_Online.Services.Update;
 using Stock_Online.Common.Validation;
+using Stock_Online.DTOs.UpdateRequest;
+using Stock_Online.Services.UpdateOrchestrator;
 
 namespace Stock_Online.Controllers
 {
@@ -10,18 +12,21 @@ namespace Stock_Online.Controllers
     [Route("stock")]
     public class StockUpdateController : ControllerBase
     {
+        private readonly IUpdateOrchestrator _orchestrator;
         private readonly IStockPriceUpdateService _priceUpdateService;
         private readonly IStockDividendUpdateService _dividendUpdateService;
         private readonly IStockShareholdingUpdateService _shareholdingUpdateService;
         public StockUpdateController(
             IStockPriceUpdateService priceUpdateService,
             IStockDividendUpdateService dividendUpdateService,
-            IStockShareholdingUpdateService shareholdingUpdateService
+            IStockShareholdingUpdateService shareholdingUpdateService,
+            IUpdateOrchestrator orchestrator
             )
         {
             this._priceUpdateService = priceUpdateService;
             this._dividendUpdateService = dividendUpdateService;
             this._shareholdingUpdateService = shareholdingUpdateService;
+            this._orchestrator = orchestrator;
         }
         // 5. 接收 HTML
         [HttpGet("")]
@@ -98,6 +103,16 @@ namespace Stock_Online.Controllers
             Console.WriteLine($"Update All Dividend");
             _ = Task.Run(() => _dividendUpdateService.FetchAndSaveAllStockAsync());
             return Ok($"Start 所有股票股利資訊");
+        }
+
+
+        // ExecuteUpdate
+        [HttpPost("execute")]
+        public async Task<IActionResult> ExecuteUpdate([FromBody] UpdateCommand command)
+        {
+            // 由於更新可能很久，通常業界會回傳一個 Job ID，而不是等待結果完成
+            string jobId = await _orchestrator.QueueUpdateJobAsync(command);
+            return Accepted(new { JobId = jobId });
         }
     }
 }

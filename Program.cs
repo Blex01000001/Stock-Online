@@ -3,17 +3,26 @@ using Stock_Online.DataAccess.SQLite.Repositories;
 using Stock_Online.Hubs;
 using Stock_Online.Services.Adjustment;
 using Stock_Online.Services.AnnualReview;
+using Stock_Online.Services.DataUpdater;
 using Stock_Online.Services.KLine;
 using Stock_Online.Services.KLine.Indicators;
 using Stock_Online.Services.ROILine;
+using Stock_Online.Services.StockProvider;
 using Stock_Online.Services.Update;
+using Stock_Online.Services.UpdateOrchestrator;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        // 可選：允許大小寫不敏感（System.Text.Json 本身多數情況已不敏感，但保險）
+        // o.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 //builder.Services.AddSingleton(
@@ -24,13 +33,14 @@ builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<IStockPriceUpdateService, StockPriceUpdateService>();
 builder.Services.AddScoped<IROILineChartService, ROILineChartService>();
 builder.Services.AddScoped<IKLineChartService, KLineChartService>();
-//builder.Services.AddScoped<IMovingAverageCalculator, MovingAverageCalculator>();
 builder.Services.AddScoped<IStockDividendUpdateService, StockDividendUpdateService>();
 builder.Services.AddScoped<IStockAnnualReviewService, StockAnnualReviewService>();
 builder.Services.AddScoped<IPriceAdjustmentService, PriceAdjustmentService>();
 builder.Services.AddScoped<IDividendAdjustmentService, DividendAdjustmentService>();
 builder.Services.AddScoped<IStockShareholdingUpdateService, StockShareholdingUpdateService>();
-
+builder.Services.AddScoped<IUpdateOrchestrator, UpdateOrchestrator>();
+builder.Services.AddScoped<IStockProvider, StockProvider>();
+builder.Services.AddScoped<IDataUpdater, PriceUpdater>();
 
 // 註冊 CORS 服務，這裡先定義一個全開的 Policy
 builder.Services.AddCors(options =>

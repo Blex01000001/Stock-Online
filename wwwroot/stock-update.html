@@ -14,11 +14,8 @@
 
         .form-container {
             width: 1000px;
-            /* 所有 form-row 的共同寬度 */
             margin: 0 auto;
-            /* 整個表單區塊置中 */
             justify-content: center;
-            /* 水平 */
         }
 
         .form-row1 {
@@ -30,17 +27,23 @@
 
         .form-row2 {
             margin-bottom: 12px;
-
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 20px;
         }
+
+        .form-row2 button {
+            font-size: 24px;
+            font-weight: 500;
+        }
+
 
         h2 {
             text-align: center;
             font-size: 25px;
-            /* 字體大小 */
             margin: 6px 0;
-            /* 上下 16px，左右 0 */
         }
 
         label {
@@ -49,16 +52,14 @@
         }
 
         input,
-        select,
-        button {
+        select {
             padding: 6px;
-            width: 220px;
+            width: 250px;
         }
 
         button {
-            width: 350px;
+            width: 400px;
             padding: 10px 16px;
-            /* ← 重點 */
             margin-right: 6px;
             cursor: pointer;
         }
@@ -83,6 +84,36 @@
 
     <h2>股票資料更新</h2>
     <div class="form-container">
+
+        <!-- ✅ 新增：依 UpdateCommand 的下拉選單 -->
+        <div class="form-row1">
+            <label>StockScope：</label>
+            <select id="scopeSelect">
+                <option value="Single" selected>Single（單一）</option>
+                <option value="Common">Common（常用）</option>
+                <option value="All">All（全部）</option>
+            </select>
+        </div>
+
+        <div class="form-row1">
+            <label>DataType：</label>
+            <!-- 先用單選（最穩）；後端 TargetDataTypes 仍會送 List -->
+            <select id="dataTypeSelect">
+                <option value="PriceUpdater" selected>Price</option>
+                <option value="DividendUpdater">Dividend</option>
+                <option value="InstitutionalUpdater">Institutional</option>
+            </select>
+        </div>
+
+        <div class="form-row1">
+            <label>TimeScope：</label>
+            <select id="timeSelect">
+                <option value="SpecificYear" selected>SpecificYear（指定年）</option>
+                <option value="FullHistory">FullHistory（全歷史）</option>
+            </select>
+        </div>
+
+        <!-- 你原本的常用股票下拉保留 -->
         <div class="form-row1">
             <label>常用股票：</label>
             <select id="stockPreset">
@@ -112,29 +143,26 @@
         </div>
 
         <div class="form-row1">
-            <label>起始年份：</label>
-            <input type="number" id="startYear" value="2010" />
+            <label>年份：</label>
+            <input type="number" id="startYear" value="2026" />
         </div>
 
-        <div class="form-row2">
-            <button onclick="updateSingleStock()">更新單一股票（單一年）</button>
-            <button onclick="updatePresetStocks()">更新常用股票（單一年）</button>
-            <button onclick="updateAllStocks()">更新全部台股股票（單一年）</button>
-            <button onclick="updateAllStockDividend()">更新全部股票股利資訊</button>
-            <button onclick="updateShareholding()">更新單一股票外資持股資訊</button>
 
+
+        <!-- ✅ 單一按鈕 -->
+        <div class="form-row2">
+            <button onclick="executeUpdate()">Update Now</button>
         </div>
     </div>
+
     <div id="result"></div>
 
     <script>
-        new signalR.HubConnectionBuilder()
-            .withUrl("http://localhost:7278/stockUpdateHub")
+        const apiBase = "http://localhost:7278";
 
+        // SignalR
         const conn = new signalR.HubConnectionBuilder()
-            .withUrl("http://localhost:7278/stockUpdateHub", {
-                withCredentials: true
-            })
+            .withUrl("http://localhost:7278/stockUpdateHub", { withCredentials: true })
             .configureLogging(signalR.LogLevel.Information)
             .build();
 
@@ -147,168 +175,164 @@
             .then(() => console.log("✅ SignalR 已連線"))
             .catch(err => console.error("❌ SignalR 連線失敗", err));
 
+        function appendLog(message) {
+            const container = document.getElementById("result");
+            const div = document.createElement("div");
+            div.className = "log";
+            div.innerText = `[${new Date()}] ${message}`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
 
-        const apiBase = "http://localhost:7278";
+        // 依 Scope/Time 動態啟用輸入欄位
+        function refreshUiState() {
+            const scope = document.getElementById("scopeSelect").value;
+            const time = document.getElementById("timeSelect").value;
 
-        const presetStocks = [
-            "0050", "0056", "00878", "9924", "8112", "2352", "1102", "2412", "2886", "9933", "2884", "2881", "2882", "6188", "2330"
-            //all//"2327", "5880", "3034", "2883", "3008", "2002", "1303", "2603", "6919", "2059","5871", "2207", "5876", "1301", "3045", "4904", "2395", "4938", "2912", "2615","2609", "6505", "6446", "2618", "2376", "2449", "1504", "3036", "2356", "3044","4958", "2324", "2105", "1102", "2347", "6239", "2385", "3005", "3702", "2377","2353", "2474", "2027", "1477", "6176", "9904", "6285", "3023", "1319", "2006","9941", "5347", "1402", "5434", "6257", "4766", "6196", "3030", "4915", "9939","2610", "2206", "1210", "9917", "2393", "6278", "6670", "2504", "2441", "1215","2607", "2850", "3010", "2015", "6605", "3592", "2404", "8299", "6121", "5522","2606", "3211", "2637", "2451", "4763", "2371", "2458", "8112", "6005", "6757","5508", "6412", "8070", "2439", "2520", "1442", "1326", "2409", "2633", "9945","2352", "2845", "2915", "1722", "8454", "5483", "3260", "3264", "6147", "3227","5388", "8016", "4961", "6197", "3617", "3078", "3090", "6206", "2801", "3037","3665", "1101", "2834", "1590", "9910", "1476", "3706", "6472", "6789", "2838","6409", "8210", "2889", "6592", "2211", "2201", "2204", "2855", "8926", "6414","1609", "9933", "2467", "3042", "6214", "2362", "2515", "1707", "9930", "2103","8131", "6806", "5515"
-        ];
+            const stockPreset = document.getElementById("stockPreset");
+            const stockId = document.getElementById("stockId");
+            const startYear = document.getElementById("startYear");
 
+            // Scope
+            if (scope === "Single") {
+                stockPreset.disabled = false;
+                stockId.disabled = false;
+            } else {
+                // Common / All：不需要 specificStockId
+                stockPreset.disabled = true;
+                stockId.disabled = true;
+            }
+
+            // Time
+            if (time === "SpecificYear") {
+                startYear.disabled = false;
+            } else {
+                // FullHistory：不需要 specificYear
+                startYear.disabled = true;
+            }
+        }
+
+        document.getElementById("scopeSelect").addEventListener("change", refreshUiState);
+        document.getElementById("timeSelect").addEventListener("change", refreshUiState);
+
+        // 常用股票選了就帶入 stockId（只有 Single 用得到）
         document.getElementById("stockPreset").addEventListener("change", function () {
             document.getElementById("stockId").value = this.value;
         });
 
-        function appendLog(message) {
-            const container = document.getElementById("result");
-
-            const div = document.createElement("div");
-            div.className = "log";
-            div.innerText = `[${new Date()}] ${message}`;
-
-            container.appendChild(div);
-
-            // ✅ 自動捲到最新訊息
-            container.scrollTop = container.scrollHeight;
-        }
-        async function updateAllStockDividend() {
-            appendLog("開始更新所有股票股利資訊");
-
-            try {
-                const res = await fetch(
-                    `${apiBase}/stock/update/dividend/all-stock`,
-                    { method: "POST" }
-                );
-
-                const text = await res.text();
-                appendLog(text);
-            }
-            catch (err) {
-                console.error(err);
-                appendLog("✖ 更新所有股票股利資訊失敗");
-            }
-        }
-        async function updateShareholding() {
-            const stockId = document.getElementById("stockId").value;
-            if (!stockId) {
-                alert("請輸入股票代號");
-                return;
-            }
-
-            appendLog("開始更新單一股票外資持股資訊");
-
-            try {
-                const res = await fetch(
-                    `${apiBase}/stock/update/Shareholding/single-stock?stockId=${stockId}`,
-                    { method: "POST" }
-                );
-                const text = await res.text();
-                appendLog(text);
-            }
-            catch (err) {
-                console.error(err);
-                appendLog("✖ 更新單一股票外資持股資訊失敗");
-            }
-        }
-
-        async function updateSingleStock() {
-            const stockId = document.getElementById("stockId").value;
-            const startYear = document.getElementById("startYear").value;
-
-            if (!stockId) {
-                alert("請輸入股票代號");
-                return;
-            }
-
-            appendLog(`開始更新股票 ${stockId}（${startYear} 年）`);
-
-            const res = await fetch(`${apiBase}/stock/update/price/single-stock`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    stockId: stockId,
-                    startYear: parseInt(startYear)
-                })
-            });
-
-            const text = await res.text();
-            appendLog(text);
-        }
-
-        async function updatePresetStocks() {
-            const year = document.getElementById("startYear").value;
-            const total = presetStocks.length;
-
-            appendLog(`開始更新常用股票（${year} 年），共 ${total} 檔`);
-
-            for (let i = 0; i < total; i++) {
-                const stockId = presetStocks[i];
-                const current = i + 1;
-
-                appendLog(`[${current}/${total}] → 更新 ${stockId} 中...`);
-
-                try {
-                    const res = await fetch(`${apiBase}/stock/update`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            stockId: stockId,
-                            startYear: parseInt(year)
-                        })
-                    });
-
-                    const text = await res.text();
-                    appendLog(`[${current}/${total}] ✔ ${stockId} 完成：${text}`);
-                } catch (err) {
-                    appendLog(`[${current}/${total}] ✖ ${stockId} 失敗`);
-                }
-
-                // 禮貌 delay，避免打爆 API
-                await new Promise(r => setTimeout(r, 300));
-            }
-
-            appendLog(`常用股票更新完成（${total}/${total}）`);
-        }
         function sortStockPreset() {
             const select = document.getElementById("stockPreset");
-
-            // 保留第一個 "-- 選擇 --"
             const defaultOption = select.options[0];
 
             const options = Array.from(select.options)
                 .slice(1)
                 .sort((a, b) => a.value.localeCompare(b.value));
 
-            // 清空後重新加入
             select.innerHTML = "";
             select.appendChild(defaultOption);
-
             options.forEach(opt => select.appendChild(opt));
         }
-        async function updateAllStocks() {
-            const year = document.getElementById("startYear").value;
 
-            if (!year) {
-                alert("請輸入年份");
+        // ✅ 核心：依 UpdateCommand 組 request
+        function buildCommand() {
+            const scope = document.getElementById("scopeSelect").value;     // "Single" / "Common" / "All"
+            const dataType = document.getElementById("dataTypeSelect").value; // "PriceUpdater"...
+            const time = document.getElementById("timeSelect").value;       // "SpecificYear" / "FullHistory"
+
+            const stockId = document.getElementById("stockId").value?.trim();
+            const yearRaw = document.getElementById("startYear").value;
+
+            const cmd = {
+                scope: scope,
+                specificStockId: null,
+                targetDataTypes: [dataType],
+                time: time,
+                specificYear: null
+            };
+
+            if (scope === "Single") {
+                if (!stockId) throw new Error("請輸入股票代號（Scope=Single 才需要）");
+                cmd.specificStockId = stockId;
+            }
+
+            if (time === "SpecificYear") {
+                const year = parseInt(yearRaw, 10);
+                if (!year || year < 1900) throw new Error("請輸入正確年份（Time=SpecificYear 才需要）");
+                cmd.specificYear = year;
+            }
+
+            return cmd;
+        }
+
+        async function executeUpdate() {
+            let command;
+            try {
+                command = buildCommand();
+            } catch (e) {
+                alert(e.message);
                 return;
             }
 
+            appendLog(formatCommand(command));
+
             try {
-                const res = await fetch(
-                    `${apiBase}/stock/update/price/all-stock?year=${year}`,
-                    { method: "POST" }
-                );
+                const res = await fetch(`${apiBase}/stock/execute`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(command)
+                });
 
                 const text = await res.text();
-                appendLog(text);
+                appendLog(formatResponse(res.status, text));
+            } catch (err) {
+                console.error(err);
+                appendLog("✖ 更新請求送出失敗（請檢查 API 是否啟動 / CORS）");
+            }
+        }
+        function formatCommand(command) {
+            const scopeText = {
+                "Single": "單一股票",
+                "Common": "常用股票",
+                "All": "全部股票"
+            }[command.scope] ?? command.scope;
+
+            const timeText = {
+                "SpecificYear": "指定年份",
+                "FullHistory": "全部歷史"
+            }[command.time] ?? command.time;
+
+            const dataText = (command.targetDataTypes || [])
+                .map(x => x.replace("Updater", ""))
+                .join(", ");
+
+            let msg = `📤 開始更新 → 範圍: ${scopeText} | 類型: ${dataText} | 時間: ${timeText}`;
+
+            if (command.scope === "Single")
+                msg += ` | 股票: ${command.specificStockId}`;
+
+            if (command.time === "SpecificYear")
+                msg += ` | 年份: ${command.specificYear}`;
+
+            return msg;
+        }
+        function formatResponse(status, text) {
+            try {
+                const json = JSON.parse(text);
+
+                if (json.jobId)
+                    return `✅ 任務已建立 ${json.jobId}`;
+
+                return `⚠️ API 回應 (${status}): ${text}`;
             }
             catch {
-                appendLog("✖ 更新台股股票失敗");
+                return `⚠️ API 回應 (${status}): ${text}`;
             }
         }
 
-        // 頁面載入後排序
+
+        // 頁面載入：排序 + 套預設狀態
         sortStockPreset();
+        refreshUiState();
 
     </script>
 

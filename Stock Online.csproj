@@ -8,13 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
-    <PackageReference Include="SqlKata" Version="4.0.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <Compile Remove="Services\Interface\**" />
+    <Content Remove="Services\Interface\**" />
+    <EmbeddedResource Remove="Services\Interface\**" />
+    <None Remove="Services\Interface\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\Interface\" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
+    <PackageReference Include="SqlKata" Version="4.0.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
 </Project>
