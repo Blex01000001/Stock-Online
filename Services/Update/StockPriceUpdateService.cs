@@ -29,7 +29,7 @@ namespace Stock_Online.Services.Update
                 throw new ArgumentException("StockId 不可為空");
 
             Query query = StockDailyPriceQueryBuilder.Build(stockId, null, "20000101", "20501231");
-            var re = await _repo.GetPriceByQueryAsync(query);
+            var re = await _repo.GetPricesAsync(query);
             return re;
         }
         public async Task FetchAndSaveAsync(int year, string stockId)

@@ -25,8 +25,7 @@ namespace Stock_Online.Services.ROILine
             Query query = new Query("StockDailyPrice")
                 .Where("StockId", stockId);
 
-            List<StockDailyPrice> dailyPrices = await _repo.GetPriceByQueryAsync(query);
-            //List<StockDailyPrice> dailyPrices = await _repo.GetByStockIdAsync(stockId);
+            List<StockDailyPrice> dailyPrices = await _repo.GetPricesAsync(query);
 
             _orderedDailyPrices = dailyPrices.OrderByDescending(x => x.TradeDate).ToList();
 

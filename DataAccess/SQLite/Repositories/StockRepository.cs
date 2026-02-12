@@ -24,305 +24,424 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
 
             _writer = new SqliteBatchWriter(_connectionString);
         }
-        public async Task<List<StockDailyPrice>> GetPriceByQueryAsync(Query query)
+        public Task<List<StockDailyPrice>> GetPricesAsync(Query query)
         {
-            var result = new List<StockDailyPrice>();
-
-            // 1️⃣ 編譯 SqlKata → SQL + Parameters
-            var compiled = _compiler.Compile(query);
-
-            await using var conn = new SqliteConnection(_connectionString);
-            await conn.OpenAsync();
-
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = compiled.Sql;
-
-            // 2️⃣ 參數綁定（這一步很關鍵）
-            foreach (var kv in compiled.NamedBindings)
+            return QueryAsync(query, reader => new StockDailyPrice
             {
-                cmd.Parameters.AddWithValue(kv.Key, kv.Value ?? DBNull.Value);
-            }
+                StockId = reader.GetString(reader.GetOrdinal("StockId")),
+                TradeDate = DateTime.ParseExact(
+                    reader.GetString(reader.GetOrdinal("TradeDate")),
+                    "yyyy-MM-dd",
+                    CultureInfo.InvariantCulture),
 
-            // 3️⃣ Execute + Mapping
-            await using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                result.Add(new StockDailyPrice
-                {
-                    StockId = reader.GetString(reader.GetOrdinal("StockId")),
+                Volume = reader.IsDBNull(reader.GetOrdinal("Volume")) ? 0 : reader.GetInt64(reader.GetOrdinal("Volume")),
+                Amount = reader.IsDBNull(reader.GetOrdinal("Amount")) ? 0 : reader.GetInt64(reader.GetOrdinal("Amount")),
 
-                    TradeDate = DateTime.ParseExact(
-                        reader.GetString(reader.GetOrdinal("TradeDate")),
-                        "yyyy-MM-dd",
-                        CultureInfo.InvariantCulture
-                    ),
+                OpenPrice = reader.IsDBNull(reader.GetOrdinal("OpenPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("OpenPrice")),
+                HighPrice = reader.IsDBNull(reader.GetOrdinal("HighPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("HighPrice")),
+                LowPrice = reader.IsDBNull(reader.GetOrdinal("LowPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("LowPrice")),
+                ClosePrice = reader.IsDBNull(reader.GetOrdinal("ClosePrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("ClosePrice")),
 
-                    Volume = reader.IsDBNull(reader.GetOrdinal("Volume")) ? 0 : reader.GetInt64(reader.GetOrdinal("Volume")),
-                    Amount = reader.IsDBNull(reader.GetOrdinal("Amount")) ? 0 : reader.GetInt64(reader.GetOrdinal("Amount")),
+                PriceChange = reader.IsDBNull(reader.GetOrdinal("PriceChange")) ? 0 : reader.GetDecimal(reader.GetOrdinal("PriceChange")),
+                TradeCount = reader.IsDBNull(reader.GetOrdinal("TradeCount")) ? 0 : reader.GetInt32(reader.GetOrdinal("TradeCount")),
 
-                    OpenPrice = reader.IsDBNull(reader.GetOrdinal("OpenPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("OpenPrice")),
-                    HighPrice = reader.IsDBNull(reader.GetOrdinal("HighPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("HighPrice")),
-                    LowPrice = reader.IsDBNull(reader.GetOrdinal("LowPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("LowPrice")),
-                    ClosePrice = reader.IsDBNull(reader.GetOrdinal("ClosePrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("ClosePrice")),
-
-                    PriceChange = reader.IsDBNull(reader.GetOrdinal("PriceChange")) ? 0 : reader.GetDecimal(reader.GetOrdinal("PriceChange")),
-                    TradeCount = reader.IsDBNull(reader.GetOrdinal("TradeCount")) ? 0 : reader.GetInt32(reader.GetOrdinal("TradeCount")),
-
-                    Note = reader.IsDBNull(reader.GetOrdinal("Note")) ? null : reader.GetString(reader.GetOrdinal("Note"))
-                });
-            }
-
-            return result;
+                Note = reader.IsDBNull(reader.GetOrdinal("Note")) ? null : reader.GetString(reader.GetOrdinal("Note"))
+            });
         }
-        public async Task<List<StockDividend>> GetDividendByQueryAsync(Query query)
+        public Task<List<StockDividend>> GetDividendsAsync(Query query)
         {
-            var result = new List<StockDividend>();
-
-            // 1️⃣ 編譯 SqlKata → SQL + Parameters
-            var compiled = _compiler.Compile(query);
-
-            await using var conn = new SqliteConnection(_connectionString);
-            await conn.OpenAsync();
-
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = compiled.Sql;
-
-            // 2️⃣ 參數綁定
-            foreach (var kv in compiled.NamedBindings)
+            return QueryAsync(query, reader => new StockDividend
             {
-                cmd.Parameters.AddWithValue(kv.Key, kv.Value ?? DBNull.Value);
-            }
+                StockId = reader.GetString(reader.GetOrdinal("StockId")),
+                Date = DateTime.ParseExact(
+                    reader.GetString(reader.GetOrdinal("Date")),
+                    "yyyy-MM-dd",
+                    CultureInfo.InvariantCulture),
+                Year = reader.GetString(reader.GetOrdinal("Year")),
 
-            // 3️⃣ Execute + Mapping
-            await using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                result.Add(new StockDividend
-                {
-                    StockId = reader.GetString(reader.GetOrdinal("StockId")),
+                StockEarningsDistribution = reader.IsDBNull(reader.GetOrdinal("StockEarningsDistribution")) ? null : reader.GetDecimal(reader.GetOrdinal("StockEarningsDistribution")),
+                StockStatutorySurplus = reader.IsDBNull(reader.GetOrdinal("StockStatutorySurplus")) ? null : reader.GetDecimal(reader.GetOrdinal("StockStatutorySurplus")),
+                StockExDividendTradingDate = reader.IsDBNull(reader.GetOrdinal("StockExDividendTradingDate")) ? null : reader.GetString(reader.GetOrdinal("StockExDividendTradingDate")),
 
-                    Date = DateTime.ParseExact(
-                        reader.GetString(reader.GetOrdinal("Date")),
-                        "yyyy-MM-dd",
-                        CultureInfo.InvariantCulture
-                    ),
+                TotalEmployeeStockDividend = reader.IsDBNull(reader.GetOrdinal("TotalEmployeeStockDividend")) ? null : reader.GetDecimal(reader.GetOrdinal("TotalEmployeeStockDividend")),
+                TotalEmployeeStockDividendAmount = reader.IsDBNull(reader.GetOrdinal("TotalEmployeeStockDividendAmount")) ? null : reader.GetDecimal(reader.GetOrdinal("TotalEmployeeStockDividendAmount")),
+                RatioOfEmployeeStockDividendOfTotal = reader.IsDBNull(reader.GetOrdinal("RatioOfEmployeeStockDividendOfTotal")) ? null : reader.GetDecimal(reader.GetOrdinal("RatioOfEmployeeStockDividendOfTotal")),
+                RatioOfEmployeeStockDividend = reader.IsDBNull(reader.GetOrdinal("RatioOfEmployeeStockDividend")) ? null : reader.GetDecimal(reader.GetOrdinal("RatioOfEmployeeStockDividend")),
 
-                    Year = reader.GetString(reader.GetOrdinal("Year")),
+                CashEarningsDistribution = reader.IsDBNull(reader.GetOrdinal("CashEarningsDistribution")) ? null : reader.GetDecimal(reader.GetOrdinal("CashEarningsDistribution")),
+                CashStatutorySurplus = reader.IsDBNull(reader.GetOrdinal("CashStatutorySurplus")) ? null : reader.GetDecimal(reader.GetOrdinal("CashStatutorySurplus")),
+                CashExDividendTradingDate = reader.IsDBNull(reader.GetOrdinal("CashExDividendTradingDate")) ? null : reader.GetString(reader.GetOrdinal("CashExDividendTradingDate")),
+                CashDividendPaymentDate = reader.IsDBNull(reader.GetOrdinal("CashDividendPaymentDate")) ? null : reader.GetString(reader.GetOrdinal("CashDividendPaymentDate")),
 
-                    StockEarningsDistribution =
-                        reader.IsDBNull(reader.GetOrdinal("StockEarningsDistribution"))
-                            ? null
-                            : reader.GetDecimal(reader.GetOrdinal("StockEarningsDistribution")),
+                TotalEmployeeCashDividend = reader.IsDBNull(reader.GetOrdinal("TotalEmployeeCashDividend"))
+                    ? null
+                    : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("TotalEmployeeCashDividend"))),
 
-                    StockStatutorySurplus =
-                        reader.IsDBNull(reader.GetOrdinal("StockStatutorySurplus"))
-                            ? null
-                            : reader.GetDecimal(reader.GetOrdinal("StockStatutorySurplus")),
+                TotalNumberOfCashCapitalIncrease = reader.IsDBNull(reader.GetOrdinal("TotalNumberOfCashCapitalIncrease")) ? null : reader.GetDecimal(reader.GetOrdinal("TotalNumberOfCashCapitalIncrease")),
+                CashIncreaseSubscriptionRate = reader.IsDBNull(reader.GetOrdinal("CashIncreaseSubscriptionRate")) ? null : reader.GetDecimal(reader.GetOrdinal("CashIncreaseSubscriptionRate")),
+                CashIncreaseSubscriptionPrice = reader.IsDBNull(reader.GetOrdinal("CashIncreaseSubscriptionPrice")) ? null : reader.GetDecimal(reader.GetOrdinal("CashIncreaseSubscriptionPrice")),
 
-                    StockExDividendTradingDate =
-                        reader.IsDBNull(reader.GetOrdinal("StockExDividendTradingDate"))
-                            ? null
-                            : reader.GetString(reader.GetOrdinal("StockExDividendTradingDate")),
+                RemunerationOfDirectorsAndSupervisors = reader.IsDBNull(reader.GetOrdinal("RemunerationOfDirectorsAndSupervisors"))
+                    ? null
+                    : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("RemunerationOfDirectorsAndSupervisors"))),
 
-                    TotalEmployeeStockDividend =
-                        reader.IsDBNull(reader.GetOrdinal("TotalEmployeeStockDividend"))
-                            ? null
-                            : reader.GetDecimal(reader.GetOrdinal("TotalEmployeeStockDividend")),
+                ParticipateDistributionOfTotalShares = reader.IsDBNull(reader.GetOrdinal("ParticipateDistributionOfTotalShares")) ? null : reader.GetDecimal(reader.GetOrdinal("ParticipateDistributionOfTotalShares")),
 
-                    TotalEmployeeStockDividendAmount =
-                        reader.IsDBNull(reader.GetOrdinal("TotalEmployeeStockDividendAmount"))
-                            ? null
-                            : reader.GetDecimal(reader.GetOrdinal("TotalEmployeeStockDividendAmount")),
-
-                    RatioOfEmployeeStockDividendOfTotal =
-                        reader.IsDBNull(reader.GetOrdinal("RatioOfEmployeeStockDividendOfTotal"))
-                            ? null
-                            : reader.GetDecimal(reader.GetOrdinal("RatioOfEmployeeStockDividendOfTotal")),
-
-                    RatioOfEmployeeStockDividend =
-                        reader.IsDBNull(reader.GetOrdinal("RatioOfEmployeeStockDividend"))
-                            ? null
-                            : reader.GetDecimal(reader.GetOrdinal("RatioOfEmployeeStockDividend")),
-
-                    CashEarningsDistribution =
-                        reader.IsDBNull(reader.GetOrdinal("CashEarningsDistribution"))
-                            ? null
-                            : reader.GetDecimal(reader.GetOrdinal("CashEarningsDistribution")),
-
-                    CashStatutorySurplus =
-                        reader.IsDBNull(reader.GetOrdinal("CashStatutorySurplus"))
-                            ? null
-                            : reader.GetDecimal(reader.GetOrdinal("CashStatutorySurplus")),
-
-                    CashExDividendTradingDate =
-                        reader.IsDBNull(reader.GetOrdinal("CashExDividendTradingDate"))
-                            ? null
-                            : reader.GetString(reader.GetOrdinal("CashExDividendTradingDate")),
-
-                    CashDividendPaymentDate =
-                        reader.IsDBNull(reader.GetOrdinal("CashDividendPaymentDate"))
-                            ? null
-                            : reader.GetString(reader.GetOrdinal("CashDividendPaymentDate")),
-
-                    TotalEmployeeCashDividend =
-                        reader.IsDBNull(reader.GetOrdinal("TotalEmployeeCashDividend"))
-                            ? null
-                            : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("TotalEmployeeCashDividend"))),
-
-                    TotalNumberOfCashCapitalIncrease =
-                        reader.IsDBNull(reader.GetOrdinal("TotalNumberOfCashCapitalIncrease"))
-                            ? null
-                            : reader.GetDecimal(reader.GetOrdinal("TotalNumberOfCashCapitalIncrease")),
-
-                    CashIncreaseSubscriptionRate =
-                        reader.IsDBNull(reader.GetOrdinal("CashIncreaseSubscriptionRate"))
-                            ? null
-                            : reader.GetDecimal(reader.GetOrdinal("CashIncreaseSubscriptionRate")),
-
-                    CashIncreaseSubscriptionPrice =
-                        reader.IsDBNull(reader.GetOrdinal("CashIncreaseSubscriptionPrice"))
-                            ? null
-                            : reader.GetDecimal(reader.GetOrdinal("CashIncreaseSubscriptionPrice")),
-
-                    RemunerationOfDirectorsAndSupervisors =
-                        reader.IsDBNull(reader.GetOrdinal("RemunerationOfDirectorsAndSupervisors"))
-                            ? null
-                            : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("RemunerationOfDirectorsAndSupervisors"))),
-
-                    ParticipateDistributionOfTotalShares =
-                        reader.IsDBNull(reader.GetOrdinal("ParticipateDistributionOfTotalShares"))
-                            ? null
-                            : reader.GetDecimal(reader.GetOrdinal("ParticipateDistributionOfTotalShares")),
-
-                    AnnouncementDate =
-                        reader.IsDBNull(reader.GetOrdinal("AnnouncementDate"))
-                            ? null
-                            : reader.GetString(reader.GetOrdinal("AnnouncementDate")),
-
-                    AnnouncementTime =
-                        reader.IsDBNull(reader.GetOrdinal("AnnouncementTime"))
-                            ? null
-                            : reader.GetString(reader.GetOrdinal("AnnouncementTime"))
-                });
-            }
-
-            return result;
+                AnnouncementDate = reader.IsDBNull(reader.GetOrdinal("AnnouncementDate")) ? null : reader.GetString(reader.GetOrdinal("AnnouncementDate")),
+                AnnouncementTime = reader.IsDBNull(reader.GetOrdinal("AnnouncementTime")) ? null : reader.GetString(reader.GetOrdinal("AnnouncementTime")),
+            });
         }
-        public async Task<List<StockShareholding>> GetShareholdingByQueryAsync(Query query)
+        public Task<List<StockShareholding>> GetShareHoldingsAsync(Query query)
         {
-            var result = new List<StockShareholding>();
-
-            // 1️⃣ 編譯 SqlKata → SQL + Parameters
-            var compiled = _compiler.Compile(query);
-
-            await using var conn = new SqliteConnection(_connectionString);
-            await conn.OpenAsync();
-
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = compiled.Sql;
-
-            // 2️⃣ 參數綁定
-            foreach (var kv in compiled.NamedBindings)
+            return QueryAsync(query, reader => new StockShareholding
             {
-                cmd.Parameters.AddWithValue(kv.Key, kv.Value ?? DBNull.Value);
-            }
+                StockId = reader.GetString(reader.GetOrdinal("StockId")),
+                Date = reader.GetString(reader.GetOrdinal("Date")),
 
-            // 3️⃣ Execute + Mapping
-            await using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                result.Add(new StockShareholding
-                {
-                    StockId = reader.GetString(reader.GetOrdinal("StockId")),
-                    Date = reader.GetString(reader.GetOrdinal("Date")),
+                StockName = reader.IsDBNull(reader.GetOrdinal("StockName")) ? null : reader.GetString(reader.GetOrdinal("StockName")),
+                InternationalCode = reader.IsDBNull(reader.GetOrdinal("InternationalCode")) ? null : reader.GetString(reader.GetOrdinal("InternationalCode")),
 
-                    StockName = reader.IsDBNull(reader.GetOrdinal("StockName"))
-                        ? null
-                        : reader.GetString(reader.GetOrdinal("StockName")),
+                ForeignInvestmentRemainingShares = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentRemainingShares")) ? null : Convert.ToInt64(reader.GetValue(reader.GetOrdinal("ForeignInvestmentRemainingShares"))),
+                ForeignInvestmentShares = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentShares")) ? null : Convert.ToInt64(reader.GetValue(reader.GetOrdinal("ForeignInvestmentShares"))),
 
-                    InternationalCode = reader.IsDBNull(reader.GetOrdinal("InternationalCode"))
-                        ? null
-                        : reader.GetString(reader.GetOrdinal("InternationalCode")),
+                ForeignInvestmentRemainRatio = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentRemainRatio")) ? null : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ForeignInvestmentRemainRatio"))),
+                ForeignInvestmentSharesRatio = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentSharesRatio")) ? null : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ForeignInvestmentSharesRatio"))),
 
-                    ForeignInvestmentRemainingShares = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentRemainingShares"))
-                        ? null
-                        : Convert.ToInt64(reader.GetValue(reader.GetOrdinal("ForeignInvestmentRemainingShares"))),
+                ForeignInvestmentUpperLimitRatio = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentUpperLimitRatio")) ? null : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ForeignInvestmentUpperLimitRatio"))),
+                ChineseInvestmentUpperLimitRatio = reader.IsDBNull(reader.GetOrdinal("ChineseInvestmentUpperLimitRatio")) ? null : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ChineseInvestmentUpperLimitRatio"))),
 
-                    ForeignInvestmentShares = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentShares"))
-                        ? null
-                        : Convert.ToInt64(reader.GetValue(reader.GetOrdinal("ForeignInvestmentShares"))),
+                NumberOfSharesIssued = reader.IsDBNull(reader.GetOrdinal("NumberOfSharesIssued")) ? null : Convert.ToInt64(reader.GetValue(reader.GetOrdinal("NumberOfSharesIssued"))),
 
-                    ForeignInvestmentRemainRatio = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentRemainRatio"))
-                        ? null
-                        : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ForeignInvestmentRemainRatio"))),
-
-                    ForeignInvestmentSharesRatio = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentSharesRatio"))
-                        ? null
-                        : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ForeignInvestmentSharesRatio"))),
-
-                    ForeignInvestmentUpperLimitRatio = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentUpperLimitRatio"))
-                        ? null
-                        : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ForeignInvestmentUpperLimitRatio"))),
-
-                    ChineseInvestmentUpperLimitRatio = reader.IsDBNull(reader.GetOrdinal("ChineseInvestmentUpperLimitRatio"))
-                        ? null
-                        : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ChineseInvestmentUpperLimitRatio"))),
-
-                    NumberOfSharesIssued = reader.IsDBNull(reader.GetOrdinal("NumberOfSharesIssued"))
-                        ? null
-                        : Convert.ToInt64(reader.GetValue(reader.GetOrdinal("NumberOfSharesIssued"))),
-
-                    RecentlyDeclareDate = reader.IsDBNull(reader.GetOrdinal("RecentlyDeclareDate"))
-                        ? null
-                        : reader.GetString(reader.GetOrdinal("RecentlyDeclareDate")),
-
-                    Note = reader.IsDBNull(reader.GetOrdinal("Note"))
-                        ? null
-                        : reader.GetString(reader.GetOrdinal("Note")),
-                });
-            }
-
-            return result;
+                RecentlyDeclareDate = reader.IsDBNull(reader.GetOrdinal("RecentlyDeclareDate")) ? null : reader.GetString(reader.GetOrdinal("RecentlyDeclareDate")),
+                Note = reader.IsDBNull(reader.GetOrdinal("Note")) ? null : reader.GetString(reader.GetOrdinal("Note")),
+            });
         }
-        public async Task<List<StockCorporateAction>> GetCorporateActionsAsync(string stockId)
+        public Task<List<StockCorporateAction>> GetCorporateActionsAsync(Query query)
         {
-            var result = new List<StockCorporateAction>();
+            // ✅ 建議：如果你希望強制排序，就在這裡補 OrderBy
+            // query = query.Clone().OrderByDesc("ExDate");  // 若你有 Clone 擴充
+            // 沒 Clone 的話就請呼叫端自己加 OrderByDesc("ExDate")
 
-            await using var conn = new SqliteConnection(_connectionString);
-            await conn.OpenAsync();
-
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-                SELECT
-                    StockId,
-                    ActionType,
-                    ExDate,
-                    Ratio,
-                    CashAmount,
-                    Description
-                FROM StockCorporateAction
-                WHERE StockId = @stockId
-                ORDER BY ExDate DESC
-            ";
-
-            cmd.Parameters.AddWithValue("@stockId", stockId);
-
-            await using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            return QueryAsync(query, reader => new StockCorporateAction
             {
-                result.Add(new StockCorporateAction
-                {
-                    StockId = reader.GetString(0),
-                    ActionType = Enum.Parse<CorporateActionType>(reader.GetString(1)),
-                    ExDate = DateTime.Parse(reader.GetString(2)),
-                    Ratio = reader.IsDBNull(3) ? null : reader.GetDecimal(3),
-                    CashAmount = reader.IsDBNull(4) ? null : reader.GetDecimal(4),
-                    Description = reader.IsDBNull(5) ? null : reader.GetString(5)
-                });
-            }
-
-            return result;
+                StockId = reader.GetString(reader.GetOrdinal("StockId")),
+                ActionType = Enum.Parse<CorporateActionType>(
+                    reader.GetString(reader.GetOrdinal("ActionType"))
+                ),
+                ExDate = DateTime.Parse(
+                    reader.GetString(reader.GetOrdinal("ExDate"))
+                ),
+                Ratio = reader.IsDBNull(reader.GetOrdinal("Ratio"))
+                    ? null
+                    : reader.GetDecimal(reader.GetOrdinal("Ratio")),
+                CashAmount = reader.IsDBNull(reader.GetOrdinal("CashAmount"))
+                    ? null
+                    : reader.GetDecimal(reader.GetOrdinal("CashAmount")),
+                Description = reader.IsDBNull(reader.GetOrdinal("Description"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("Description"))
+            });
         }
+
+        //public async Task<List<StockDailyPrice>> GetPriceByQueryAsync(Query query)
+        //{
+        //    var result = new List<StockDailyPrice>();
+
+        //    // 1️⃣ 編譯 SqlKata → SQL + Parameters
+        //    var compiled = _compiler.Compile(query);
+
+        //    await using var conn = new SqliteConnection(_connectionString);
+        //    await conn.OpenAsync();
+
+        //    await using var cmd = conn.CreateCommand();
+        //    cmd.CommandText = compiled.Sql;
+
+        //    // 2️⃣ 參數綁定（這一步很關鍵）
+        //    foreach (var kv in compiled.NamedBindings)
+        //    {
+        //        cmd.Parameters.AddWithValue(kv.Key, kv.Value ?? DBNull.Value);
+        //    }
+
+        //    // 3️⃣ Execute + Mapping
+        //    await using var reader = await cmd.ExecuteReaderAsync();
+        //    while (await reader.ReadAsync())
+        //    {
+        //        result.Add(new StockDailyPrice
+        //        {
+        //            StockId = reader.GetString(reader.GetOrdinal("StockId")),
+
+        //            TradeDate = DateTime.ParseExact(
+        //                reader.GetString(reader.GetOrdinal("TradeDate")),
+        //                "yyyy-MM-dd",
+        //                CultureInfo.InvariantCulture
+        //            ),
+
+        //            Volume = reader.IsDBNull(reader.GetOrdinal("Volume")) ? 0 : reader.GetInt64(reader.GetOrdinal("Volume")),
+        //            Amount = reader.IsDBNull(reader.GetOrdinal("Amount")) ? 0 : reader.GetInt64(reader.GetOrdinal("Amount")),
+
+        //            OpenPrice = reader.IsDBNull(reader.GetOrdinal("OpenPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("OpenPrice")),
+        //            HighPrice = reader.IsDBNull(reader.GetOrdinal("HighPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("HighPrice")),
+        //            LowPrice = reader.IsDBNull(reader.GetOrdinal("LowPrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("LowPrice")),
+        //            ClosePrice = reader.IsDBNull(reader.GetOrdinal("ClosePrice")) ? 0 : reader.GetDecimal(reader.GetOrdinal("ClosePrice")),
+
+        //            PriceChange = reader.IsDBNull(reader.GetOrdinal("PriceChange")) ? 0 : reader.GetDecimal(reader.GetOrdinal("PriceChange")),
+        //            TradeCount = reader.IsDBNull(reader.GetOrdinal("TradeCount")) ? 0 : reader.GetInt32(reader.GetOrdinal("TradeCount")),
+
+        //            Note = reader.IsDBNull(reader.GetOrdinal("Note")) ? null : reader.GetString(reader.GetOrdinal("Note"))
+        //        });
+        //    }
+
+        //    return result;
+        //}
+        //public async Task<List<StockDividend>> GetDividendByQueryAsync(Query query)
+        //{
+        //    var result = new List<StockDividend>();
+
+        //    // 1️⃣ 編譯 SqlKata → SQL + Parameters
+        //    var compiled = _compiler.Compile(query);
+
+        //    await using var conn = new SqliteConnection(_connectionString);
+        //    await conn.OpenAsync();
+
+        //    await using var cmd = conn.CreateCommand();
+        //    cmd.CommandText = compiled.Sql;
+
+        //    // 2️⃣ 參數綁定
+        //    foreach (var kv in compiled.NamedBindings)
+        //    {
+        //        cmd.Parameters.AddWithValue(kv.Key, kv.Value ?? DBNull.Value);
+        //    }
+
+        //    // 3️⃣ Execute + Mapping
+        //    await using var reader = await cmd.ExecuteReaderAsync();
+        //    while (await reader.ReadAsync())
+        //    {
+        //        result.Add(new StockDividend
+        //        {
+        //            StockId = reader.GetString(reader.GetOrdinal("StockId")),
+
+        //            Date = DateTime.ParseExact(
+        //                reader.GetString(reader.GetOrdinal("Date")),
+        //                "yyyy-MM-dd",
+        //                CultureInfo.InvariantCulture
+        //            ),
+
+        //            Year = reader.GetString(reader.GetOrdinal("Year")),
+
+        //            StockEarningsDistribution =
+        //                reader.IsDBNull(reader.GetOrdinal("StockEarningsDistribution"))
+        //                    ? null
+        //                    : reader.GetDecimal(reader.GetOrdinal("StockEarningsDistribution")),
+
+        //            StockStatutorySurplus =
+        //                reader.IsDBNull(reader.GetOrdinal("StockStatutorySurplus"))
+        //                    ? null
+        //                    : reader.GetDecimal(reader.GetOrdinal("StockStatutorySurplus")),
+
+        //            StockExDividendTradingDate =
+        //                reader.IsDBNull(reader.GetOrdinal("StockExDividendTradingDate"))
+        //                    ? null
+        //                    : reader.GetString(reader.GetOrdinal("StockExDividendTradingDate")),
+
+        //            TotalEmployeeStockDividend =
+        //                reader.IsDBNull(reader.GetOrdinal("TotalEmployeeStockDividend"))
+        //                    ? null
+        //                    : reader.GetDecimal(reader.GetOrdinal("TotalEmployeeStockDividend")),
+
+        //            TotalEmployeeStockDividendAmount =
+        //                reader.IsDBNull(reader.GetOrdinal("TotalEmployeeStockDividendAmount"))
+        //                    ? null
+        //                    : reader.GetDecimal(reader.GetOrdinal("TotalEmployeeStockDividendAmount")),
+
+        //            RatioOfEmployeeStockDividendOfTotal =
+        //                reader.IsDBNull(reader.GetOrdinal("RatioOfEmployeeStockDividendOfTotal"))
+        //                    ? null
+        //                    : reader.GetDecimal(reader.GetOrdinal("RatioOfEmployeeStockDividendOfTotal")),
+
+        //            RatioOfEmployeeStockDividend =
+        //                reader.IsDBNull(reader.GetOrdinal("RatioOfEmployeeStockDividend"))
+        //                    ? null
+        //                    : reader.GetDecimal(reader.GetOrdinal("RatioOfEmployeeStockDividend")),
+
+        //            CashEarningsDistribution =
+        //                reader.IsDBNull(reader.GetOrdinal("CashEarningsDistribution"))
+        //                    ? null
+        //                    : reader.GetDecimal(reader.GetOrdinal("CashEarningsDistribution")),
+
+        //            CashStatutorySurplus =
+        //                reader.IsDBNull(reader.GetOrdinal("CashStatutorySurplus"))
+        //                    ? null
+        //                    : reader.GetDecimal(reader.GetOrdinal("CashStatutorySurplus")),
+
+        //            CashExDividendTradingDate =
+        //                reader.IsDBNull(reader.GetOrdinal("CashExDividendTradingDate"))
+        //                    ? null
+        //                    : reader.GetString(reader.GetOrdinal("CashExDividendTradingDate")),
+
+        //            CashDividendPaymentDate =
+        //                reader.IsDBNull(reader.GetOrdinal("CashDividendPaymentDate"))
+        //                    ? null
+        //                    : reader.GetString(reader.GetOrdinal("CashDividendPaymentDate")),
+
+        //            TotalEmployeeCashDividend =
+        //                reader.IsDBNull(reader.GetOrdinal("TotalEmployeeCashDividend"))
+        //                    ? null
+        //                    : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("TotalEmployeeCashDividend"))),
+
+        //            TotalNumberOfCashCapitalIncrease =
+        //                reader.IsDBNull(reader.GetOrdinal("TotalNumberOfCashCapitalIncrease"))
+        //                    ? null
+        //                    : reader.GetDecimal(reader.GetOrdinal("TotalNumberOfCashCapitalIncrease")),
+
+        //            CashIncreaseSubscriptionRate =
+        //                reader.IsDBNull(reader.GetOrdinal("CashIncreaseSubscriptionRate"))
+        //                    ? null
+        //                    : reader.GetDecimal(reader.GetOrdinal("CashIncreaseSubscriptionRate")),
+
+        //            CashIncreaseSubscriptionPrice =
+        //                reader.IsDBNull(reader.GetOrdinal("CashIncreaseSubscriptionPrice"))
+        //                    ? null
+        //                    : reader.GetDecimal(reader.GetOrdinal("CashIncreaseSubscriptionPrice")),
+
+        //            RemunerationOfDirectorsAndSupervisors =
+        //                reader.IsDBNull(reader.GetOrdinal("RemunerationOfDirectorsAndSupervisors"))
+        //                    ? null
+        //                    : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("RemunerationOfDirectorsAndSupervisors"))),
+
+        //            ParticipateDistributionOfTotalShares =
+        //                reader.IsDBNull(reader.GetOrdinal("ParticipateDistributionOfTotalShares"))
+        //                    ? null
+        //                    : reader.GetDecimal(reader.GetOrdinal("ParticipateDistributionOfTotalShares")),
+
+        //            AnnouncementDate =
+        //                reader.IsDBNull(reader.GetOrdinal("AnnouncementDate"))
+        //                    ? null
+        //                    : reader.GetString(reader.GetOrdinal("AnnouncementDate")),
+
+        //            AnnouncementTime =
+        //                reader.IsDBNull(reader.GetOrdinal("AnnouncementTime"))
+        //                    ? null
+        //                    : reader.GetString(reader.GetOrdinal("AnnouncementTime"))
+        //        });
+        //    }
+
+        //    return result;
+        //}
+        //public async Task<List<StockShareholding>> GetShareholdingByQueryAsync(Query query)
+        //{
+        //    var result = new List<StockShareholding>();
+
+        //    // 1️⃣ 編譯 SqlKata → SQL + Parameters
+        //    var compiled = _compiler.Compile(query);
+
+        //    await using var conn = new SqliteConnection(_connectionString);
+        //    await conn.OpenAsync();
+
+        //    await using var cmd = conn.CreateCommand();
+        //    cmd.CommandText = compiled.Sql;
+
+        //    // 2️⃣ 參數綁定
+        //    foreach (var kv in compiled.NamedBindings)
+        //    {
+        //        cmd.Parameters.AddWithValue(kv.Key, kv.Value ?? DBNull.Value);
+        //    }
+
+        //    // 3️⃣ Execute + Mapping
+        //    await using var reader = await cmd.ExecuteReaderAsync();
+        //    while (await reader.ReadAsync())
+        //    {
+        //        result.Add(new StockShareholding
+        //        {
+        //            StockId = reader.GetString(reader.GetOrdinal("StockId")),
+        //            Date = reader.GetString(reader.GetOrdinal("Date")),
+
+        //            StockName = reader.IsDBNull(reader.GetOrdinal("StockName"))
+        //                ? null
+        //                : reader.GetString(reader.GetOrdinal("StockName")),
+
+        //            InternationalCode = reader.IsDBNull(reader.GetOrdinal("InternationalCode"))
+        //                ? null
+        //                : reader.GetString(reader.GetOrdinal("InternationalCode")),
+
+        //            ForeignInvestmentRemainingShares = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentRemainingShares"))
+        //                ? null
+        //                : Convert.ToInt64(reader.GetValue(reader.GetOrdinal("ForeignInvestmentRemainingShares"))),
+
+        //            ForeignInvestmentShares = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentShares"))
+        //                ? null
+        //                : Convert.ToInt64(reader.GetValue(reader.GetOrdinal("ForeignInvestmentShares"))),
+
+        //            ForeignInvestmentRemainRatio = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentRemainRatio"))
+        //                ? null
+        //                : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ForeignInvestmentRemainRatio"))),
+
+        //            ForeignInvestmentSharesRatio = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentSharesRatio"))
+        //                ? null
+        //                : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ForeignInvestmentSharesRatio"))),
+
+        //            ForeignInvestmentUpperLimitRatio = reader.IsDBNull(reader.GetOrdinal("ForeignInvestmentUpperLimitRatio"))
+        //                ? null
+        //                : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ForeignInvestmentUpperLimitRatio"))),
+
+        //            ChineseInvestmentUpperLimitRatio = reader.IsDBNull(reader.GetOrdinal("ChineseInvestmentUpperLimitRatio"))
+        //                ? null
+        //                : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("ChineseInvestmentUpperLimitRatio"))),
+
+        //            NumberOfSharesIssued = reader.IsDBNull(reader.GetOrdinal("NumberOfSharesIssued"))
+        //                ? null
+        //                : Convert.ToInt64(reader.GetValue(reader.GetOrdinal("NumberOfSharesIssued"))),
+
+        //            RecentlyDeclareDate = reader.IsDBNull(reader.GetOrdinal("RecentlyDeclareDate"))
+        //                ? null
+        //                : reader.GetString(reader.GetOrdinal("RecentlyDeclareDate")),
+
+        //            Note = reader.IsDBNull(reader.GetOrdinal("Note"))
+        //                ? null
+        //                : reader.GetString(reader.GetOrdinal("Note")),
+        //        });
+        //    }
+
+        //    return result;
+        //}
+        //public async Task<List<StockCorporateAction>> GetCorporateActionsAsync(string stockId)
+        //{
+        //    var result = new List<StockCorporateAction>();
+
+        //    await using var conn = new SqliteConnection(_connectionString);
+        //    await conn.OpenAsync();
+
+        //    await using var cmd = conn.CreateCommand();
+        //    cmd.CommandText = @"
+        //        SELECT
+        //            StockId,
+        //            ActionType,
+        //            ExDate,
+        //            Ratio,
+        //            CashAmount,
+        //            Description
+        //        FROM StockCorporateAction
+        //        WHERE StockId = @stockId
+        //        ORDER BY ExDate DESC
+        //    ";
+
+        //    cmd.Parameters.AddWithValue("@stockId", stockId);
+
+        //    await using var reader = await cmd.ExecuteReaderAsync();
+        //    while (await reader.ReadAsync())
+        //    {
+        //        result.Add(new StockCorporateAction
+        //        {
+        //            StockId = reader.GetString(0),
+        //            ActionType = Enum.Parse<CorporateActionType>(reader.GetString(1)),
+        //            ExDate = DateTime.Parse(reader.GetString(2)),
+        //            Ratio = reader.IsDBNull(3) ? null : reader.GetDecimal(3),
+        //            CashAmount = reader.IsDBNull(4) ? null : reader.GetDecimal(4),
+        //            Description = reader.IsDBNull(5) ? null : reader.GetString(5)
+        //        });
+        //    }
+
+        //    return result;
+        //}
 
         public async Task SavePriceToDbAsync(List<StockDailyPrice> list)
         {
@@ -639,6 +758,30 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
 
             cmd.ExecuteNonQuery();
         }
+        private async Task<List<T>> QueryAsync<T>(
+            Query query,
+            Func<SqliteDataReader, T> map)
+        {
+            var result = new List<T>();
+
+            var compiled = _compiler.Compile(query);
+
+            await using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync();
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = compiled.Sql;
+
+            foreach (var kv in compiled.NamedBindings)
+                cmd.Parameters.AddWithValue(kv.Key, kv.Value ?? DBNull.Value);
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                result.Add(map(reader));
+
+            return result;
+        }
+
 
         public async Task<StockInfoDto?> GetStockInfoAsync(string stockId)
         {

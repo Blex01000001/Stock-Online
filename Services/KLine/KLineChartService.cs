@@ -28,12 +28,12 @@ namespace Stock_Online.Services.KLine
         )
         {
             Query query = StockDailyPriceQueryBuilder.Build(stockId, null, start, end);
-            List<StockDailyPrice> prices = (await _repo.GetPriceByQueryAsync(query))
+            List<StockDailyPrice> prices = (await _repo.GetPricesAsync(query))
                 .OrderBy(x => x.TradeDate)
                 .ToList();
 
             Query queryAll = StockDailyPriceQueryBuilder.Build(stockId, null, "19110101", end);
-            List<StockDailyPrice> pricesAll = (await _repo.GetPriceByQueryAsync(queryAll))
+            List<StockDailyPrice> pricesAll = (await _repo.GetPricesAsync(queryAll))
                 .OrderBy(x => x.TradeDate)
                 .ToList();
 
@@ -41,7 +41,7 @@ namespace Stock_Online.Services.KLine
             int index = pricesAll.IndexOf(allPriceDic[prices[0].TradeDate]);
 
             Query ShareholdingQuery = new Query("StockShareholding").Where("StockId", stockId);
-            List<StockShareholding> StockShareholding = (await _repo.GetShareholdingByQueryAsync(ShareholdingQuery))
+            List<StockShareholding> StockShareholding = (await _repo.GetShareHoldingsAsync(ShareholdingQuery))
                 .OrderBy(x => x.Date)
                 .ToList();
 
@@ -52,7 +52,7 @@ namespace Stock_Online.Services.KLine
             Console.WriteLine($"Get K Line: {stockId}");
             Query query = StockDailyPriceQueryBuilder.Build(stockId, null, "20200101", "20261231");
 
-            List<StockDailyPrice> prices = (await _repo.GetPriceByQueryAsync(query))
+            List<StockDailyPrice> prices = (await _repo.GetPricesAsync(query))
                 .OrderBy(x => x.TradeDate)
                 .ToList();
 

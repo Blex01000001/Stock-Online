@@ -30,16 +30,20 @@ namespace Stock_Online.Services.AnnualReview
         }
         public async Task<List<StockAnnualReviewDto>> GetDataAsync(string stockId)
         {
-            List<StockCorporateAction> actions = await _repo.GetCorporateActionsAsync(stockId);
+            var q = new Query("StockCorporateAction")
+                .Select("StockId", "ActionType", "ExDate", "Ratio", "CashAmount", "Description")
+                .Where("StockId", stockId)
+                .OrderByDesc("ExDate");
+            List<StockCorporateAction> actions = await _repo.GetCorporateActionsAsync(q);
 
             Query dividendQuery = new Query("StockDividend")
                 .Where("StockId", stockId);
-            List<StockDividend> dividends = await _repo.GetDividendByQueryAsync(dividendQuery);
+            List<StockDividend> dividends = await _repo.GetDividendsAsync(dividendQuery);
             IReadOnlyList<StockDividend> adjDividends = _dividendAdj.AdjustDividends(dividends, actions);
 
             Query priceQuery = StockDailyPriceQueryBuilder.Build(
                 stockId, null, "19110101", "20501231");
-            List<StockDailyPrice> prices = (await _repo.GetPriceByQueryAsync(priceQuery))
+            List<StockDailyPrice> prices = (await _repo.GetPricesAsync(priceQuery))
                 .OrderBy(x => x.TradeDate)
                 .ToList();
             IReadOnlyList<StockDailyPrice> adjPrices = _priceAdj.AdjustPrices(prices, actions);
