@@ -14,7 +14,10 @@ namespace Stock_Online.Services.UpdateOrchestrator
         private readonly IReadOnlyDictionary<DataType, IDataUpdater> _updaterMap;
         private readonly IStockProvider _stockProvider;       // 專門負責抓取單一/常用/全部股票清單
         private readonly IHubContext<StockUpdateHub> _hub;
-        public UpdateOrchestrator(IStockProvider stockProvider, IEnumerable<IDataUpdater> updaters, IHubContext<StockUpdateHub> hub)
+        public UpdateOrchestrator(
+            IStockProvider stockProvider,
+            IEnumerable<IDataUpdater> updaters,
+            IHubContext<StockUpdateHub> hub)
         {
             this._stockProvider = stockProvider;
             this._updaterMap = updaters.ToDictionary(x => x.DataType);
