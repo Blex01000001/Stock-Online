@@ -29,6 +29,7 @@ builder.Services.AddSwaggerGen();
 //    new StockDailyPriceService("stock.db")
 //);
 builder.Services.AddSignalR();
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<IStockPriceUpdateService, StockPriceUpdateService>();
 builder.Services.AddScoped<IROILineChartService, ROILineChartService>();
@@ -43,6 +44,7 @@ builder.Services.AddScoped<IStockProvider, StockProvider>();
 builder.Services.AddScoped<IDataUpdater, PriceUpdater>();
 builder.Services.AddScoped<IDataUpdater, DividendUpdater>();
 builder.Services.AddScoped<IDataUpdater, ShareHoldingUpdater>();
+
 
 // 註冊 CORS 服務，這裡先定義一個全開的 Policy
 builder.Services.AddCors(options =>
