@@ -100,7 +100,7 @@ namespace Stock_Online.Services.Update
                             .Cast<StockDailyPrice>()
                             .ToList();
 
-                        _repo.SaveToDb(models);
+                        _repo.SavePriceToDbAsync(models);
                     }
 
                     return true; // 成功

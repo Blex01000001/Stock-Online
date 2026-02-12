@@ -53,7 +53,7 @@ namespace Stock_Online.Services.DataUpdater
                     .Cast<StockDividend>()
                     .ToList();
 
-                _repo.SaveDividendToDb(models);
+                await  _repo.SaveDividendToDbAsync(models);
 
                 await ReportProgressAsync($"✅ 股利更新完成 {stockId}");
             }

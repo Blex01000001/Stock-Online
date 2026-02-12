@@ -73,7 +73,7 @@ namespace Stock_Online.Services.Update
                         .Cast<StockDividend>()
                         .ToList();
 
-                    _repo.SaveDividendToDb(models);
+                    _repo.SaveDividendToDbAsync(models);
 
                     success++;
 

@@ -12,8 +12,8 @@ namespace Stock_Online.DataAccess.SQLite.Interface
         Task<List<StockCorporateAction>> GetCorporateActionsAsync(string stockId);
         Task<StockInfoDto?> GetStockInfoAsync(string stockId);
         Task<List<string>> GetAllStockIdsAsync();
-        void SaveToDb(List<StockDailyPrice> list);
-        void SaveDividendToDb(List<StockDividend> list);
+        Task SavePriceToDbAsync(List<StockDailyPrice> list);
+        Task SaveDividendToDbAsync(List<StockDividend> list);
         Task SaveShareholdingToDb(List<StockShareholding> list);
     }
 }

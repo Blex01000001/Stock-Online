@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Configuration;
 using SqlKata;
 using SqlKata.Compilers;
 using Stock_Online.DataAccess.SQLite.Interface;
@@ -12,16 +13,16 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
 {
     public class StockRepository : IStockRepository
     {
+        private readonly SqliteBatchWriter _writer;
         private readonly string _dbPath;
         private readonly string _connectionString;
         private readonly SqliteCompiler _compiler = new();
-        public StockRepository(IConfiguration configuration)
+        public StockRepository(IConfiguration configuration /* or from DI */)
         {
-            _connectionString = configuration.GetConnectionString("Sqlite");
-            _dbPath = "stock.db";
-            EnsureTable();
-            EnsureDividendTable();
-            EnsureShareholdingTable();
+            _connectionString = configuration.GetConnectionString("Sqlite")
+                ?? throw new InvalidOperationException("Connection string not found.");
+
+            _writer = new SqliteBatchWriter(_connectionString);
         }
         public async Task<List<StockDailyPrice>> GetPriceByQueryAsync(Query query)
         {
@@ -323,131 +324,151 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
             return result;
         }
 
-        public void SaveToDb(List<StockDailyPrice> list)
+        public async Task SavePriceToDbAsync(List<StockDailyPrice> list)
         {
-            using var conn = new SqliteConnection($"Data Source={_dbPath}");
-            conn.Open();
-            using var tx = conn.BeginTransaction();
-
-            foreach (var item in list)
-            {
-                var cmd = conn.CreateCommand();
-                cmd.CommandText =
-                    """
-                    INSERT OR REPLACE INTO StockDailyPrice
-                    (StockId, TradeDate, Volume, Amount, OpenPrice, HighPrice, LowPrice,
-                     ClosePrice, PriceChange, TradeCount, Note)
-                    VALUES
-                    (@StockId, @TradeDate, @Volume, @Amount, @Open, @High, @Low,
-                     @Close, @Change, @Count, @Note);
-                    """;
-
-                cmd.Parameters.AddWithValue("@StockId", item.StockId);
-                cmd.Parameters.AddWithValue("@TradeDate", item.TradeDate.ToString("yyyy-MM-dd"));
-                cmd.Parameters.AddWithValue("@Volume", item.Volume);
-                cmd.Parameters.AddWithValue("@Amount", item.Amount);
-                cmd.Parameters.AddWithValue("@Open", item.OpenPrice);
-                cmd.Parameters.AddWithValue("@High", item.HighPrice);
-                cmd.Parameters.AddWithValue("@Low", item.LowPrice);
-                cmd.Parameters.AddWithValue("@Close", item.ClosePrice);
-                cmd.Parameters.AddWithValue("@Change", item.PriceChange);
-                cmd.Parameters.AddWithValue("@Count", item.TradeCount);
-                cmd.Parameters.AddWithValue("@Note", item.Note);
-
-                cmd.ExecuteNonQuery();
-            }
-
-            tx.Commit();
-        }
-        public void SaveDividendToDb(List<StockDividend> list)
-        {
-            using var conn = new SqliteConnection($"Data Source={_dbPath}");
-            conn.Open();
-
-            using var tx = conn.BeginTransaction();
-
-            foreach (var item in list)
-            {
-                var cmd = conn.CreateCommand();
-                cmd.CommandText =
-                """
-                INSERT OR REPLACE INTO StockDividend
-                (
-                    StockId, Date, Year,
-                    StockEarningsDistribution, StockStatutorySurplus, StockExDividendTradingDate,
-                    TotalEmployeeStockDividend, TotalEmployeeStockDividendAmount,
-                    RatioOfEmployeeStockDividendOfTotal, RatioOfEmployeeStockDividend,
-                    CashEarningsDistribution, CashStatutorySurplus,
-                    CashExDividendTradingDate, CashDividendPaymentDate,
-                    TotalEmployeeCashDividend, TotalNumberOfCashCapitalIncrease,
-                    CashIncreaseSubscriptionRate, CashIncreaseSubscriptionPrice,
-                    RemunerationOfDirectorsAndSupervisors,
-                    ParticipateDistributionOfTotalShares,
-                    AnnouncementDate, AnnouncementTime
-                )
+            const string sql = """
+                INSERT OR REPLACE INTO StockDailyPrice
+                (StockId, TradeDate, Volume, Amount, OpenPrice, HighPrice, LowPrice,
+                 ClosePrice, PriceChange, TradeCount, Note)
                 VALUES
-                (
-                    @StockId, @Date, @Year,
-                    @StockEarningsDistribution, @StockStatutorySurplus, @StockExDividendTradingDate,
-                    @TotalEmployeeStockDividend, @TotalEmployeeStockDividendAmount,
-                    @RatioOfEmployeeStockDividendOfTotal, @RatioOfEmployeeStockDividend,
-                    @CashEarningsDistribution, @CashStatutorySurplus,
-                    @CashExDividendTradingDate, @CashDividendPaymentDate,
-                    @TotalEmployeeCashDividend, @TotalNumberOfCashCapitalIncrease,
-                    @CashIncreaseSubscriptionRate, @CashIncreaseSubscriptionPrice,
-                    @RemunerationOfDirectorsAndSupervisors,
-                    @ParticipateDistributionOfTotalShares,
-                    @AnnouncementDate, @AnnouncementTime
-                );
+                (@StockId, @TradeDate, @Volume, @Amount, @Open, @High, @Low,
+                 @Close, @Change, @Count, @Note);
                 """;
 
-                cmd.Parameters.AddWithValue("@StockId", item.StockId);
-                cmd.Parameters.AddWithValue("@Date", item.Date.ToString("yyyy-MM-dd"));
-                cmd.Parameters.AddWithValue("@Year", DbValue(item.Year));
+            await _writer.ExecuteAsync(
+                list,
+                sql,
+                createParameters: cmd =>
+                {
+                    cmd.Parameters.Add(new SqliteParameter("@StockId", ""));
+                    cmd.Parameters.Add(new SqliteParameter("@TradeDate", ""));
+                    cmd.Parameters.Add(new SqliteParameter("@Volume", 0L));
+                    cmd.Parameters.Add(new SqliteParameter("@Amount", 0L));
+                    cmd.Parameters.Add(new SqliteParameter("@Open", 0m));
+                    cmd.Parameters.Add(new SqliteParameter("@High", 0m));
+                    cmd.Parameters.Add(new SqliteParameter("@Low", 0m));
+                    cmd.Parameters.Add(new SqliteParameter("@Close", 0m));
+                    cmd.Parameters.Add(new SqliteParameter("@Change", 0m));
+                    cmd.Parameters.Add(new SqliteParameter("@Count", 0));
+                    cmd.Parameters.Add(new SqliteParameter("@Note", ""));
+                },
+                bindValues: (cmd, x) =>
+                {
+                    cmd.Parameters["@StockId"].Value = x.StockId;
+                    cmd.Parameters["@TradeDate"].Value = x.TradeDate.ToString("yyyy-MM-dd");
+                    cmd.Parameters["@Volume"].Value = x.Volume;
+                    cmd.Parameters["@Amount"].Value = x.Amount;
+                    cmd.Parameters["@Open"].Value = x.OpenPrice;
+                    cmd.Parameters["@High"].Value = x.HighPrice;
+                    cmd.Parameters["@Low"].Value = x.LowPrice;
+                    cmd.Parameters["@Close"].Value = x.ClosePrice;
+                    cmd.Parameters["@Change"].Value = x.PriceChange;
+                    cmd.Parameters["@Count"].Value = x.TradeCount;
+                    cmd.Parameters["@Note"].Value = (object?)x.Note ?? DBNull.Value;
+                });
+        }
+        public async Task SaveDividendToDbAsync(List<StockDividend> list)
+        {
+            const string sql = """
+            INSERT OR REPLACE INTO StockDividend
+            (
+                StockId, Date, Year,
+                StockEarningsDistribution, StockStatutorySurplus, StockExDividendTradingDate,
+                TotalEmployeeStockDividend, TotalEmployeeStockDividendAmount,
+                RatioOfEmployeeStockDividendOfTotal, RatioOfEmployeeStockDividend,
+                CashEarningsDistribution, CashStatutorySurplus,
+                CashExDividendTradingDate, CashDividendPaymentDate,
+                TotalEmployeeCashDividend, TotalNumberOfCashCapitalIncrease,
+                CashIncreaseSubscriptionRate, CashIncreaseSubscriptionPrice,
+                RemunerationOfDirectorsAndSupervisors,
+                ParticipateDistributionOfTotalShares,
+                AnnouncementDate, AnnouncementTime
+            )
+            VALUES
+            (
+                @StockId, @Date, @Year,
+                @StockEarningsDistribution, @StockStatutorySurplus, @StockExDividendTradingDate,
+                @TotalEmployeeStockDividend, @TotalEmployeeStockDividendAmount,
+                @RatioOfEmployeeStockDividendOfTotal, @RatioOfEmployeeStockDividend,
+                @CashEarningsDistribution, @CashStatutorySurplus,
+                @CashExDividendTradingDate, @CashDividendPaymentDate,
+                @TotalEmployeeCashDividend, @TotalNumberOfCashCapitalIncrease,
+                @CashIncreaseSubscriptionRate, @CashIncreaseSubscriptionPrice,
+                @RemunerationOfDirectorsAndSupervisors,
+                @ParticipateDistributionOfTotalShares,
+                @AnnouncementDate, @AnnouncementTime
+            );
+            """;
 
-                cmd.Parameters.AddWithValue("@StockEarningsDistribution", DbValue(item.StockEarningsDistribution));
-                cmd.Parameters.AddWithValue("@StockStatutorySurplus", DbValue(item.StockStatutorySurplus));
-                cmd.Parameters.AddWithValue("@StockExDividendTradingDate", DbValue(item.StockExDividendTradingDate));
+            await _writer.ExecuteAsync(
+                list,
+                sql,
+                createParameters: cmd =>
+                {
+                    cmd.Parameters.Add(new SqliteParameter("@StockId", ""));
+                    cmd.Parameters.Add(new SqliteParameter("@Date", ""));
+                    cmd.Parameters.Add(new SqliteParameter("@Year", ""));
 
-                cmd.Parameters.AddWithValue("@TotalEmployeeStockDividend", DbValue(item.TotalEmployeeStockDividend));
-                cmd.Parameters.AddWithValue("@TotalEmployeeStockDividendAmount", DbValue(item.TotalEmployeeStockDividendAmount));
-                cmd.Parameters.AddWithValue("@RatioOfEmployeeStockDividendOfTotal", DbValue(item.RatioOfEmployeeStockDividendOfTotal));
-                cmd.Parameters.AddWithValue("@RatioOfEmployeeStockDividend", DbValue(item.RatioOfEmployeeStockDividend));
+                    cmd.Parameters.Add(new SqliteParameter("@StockEarningsDistribution", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@StockStatutorySurplus", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@StockExDividendTradingDate", DBNull.Value));
 
-                cmd.Parameters.AddWithValue("@CashEarningsDistribution", DbValue(item.CashEarningsDistribution));
-                cmd.Parameters.AddWithValue("@CashStatutorySurplus", DbValue(item.CashStatutorySurplus));
-                cmd.Parameters.AddWithValue("@CashExDividendTradingDate", DbValue(item.CashExDividendTradingDate));
-                cmd.Parameters.AddWithValue("@CashDividendPaymentDate", DbValue(item.CashDividendPaymentDate));
+                    cmd.Parameters.Add(new SqliteParameter("@TotalEmployeeStockDividend", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@TotalEmployeeStockDividendAmount", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@RatioOfEmployeeStockDividendOfTotal", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@RatioOfEmployeeStockDividend", DBNull.Value));
 
-                cmd.Parameters.AddWithValue("@TotalEmployeeCashDividend", DbValue(item.TotalEmployeeCashDividend));
-                cmd.Parameters.AddWithValue("@TotalNumberOfCashCapitalIncrease", DbValue(item.TotalNumberOfCashCapitalIncrease));
-                cmd.Parameters.AddWithValue("@CashIncreaseSubscriptionRate", DbValue(item.CashIncreaseSubscriptionRate));
-                cmd.Parameters.AddWithValue("@CashIncreaseSubscriptionPrice",   DbValue(item.CashIncreaseSubscriptionPrice));
+                    cmd.Parameters.Add(new SqliteParameter("@CashEarningsDistribution", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@CashStatutorySurplus", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@CashExDividendTradingDate", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@CashDividendPaymentDate", DBNull.Value));
 
-                cmd.Parameters.AddWithValue("@RemunerationOfDirectorsAndSupervisors", DbValue(item.RemunerationOfDirectorsAndSupervisors));
-                cmd.Parameters.AddWithValue("@ParticipateDistributionOfTotalShares", DbValue(item.ParticipateDistributionOfTotalShares));
+                    cmd.Parameters.Add(new SqliteParameter("@TotalEmployeeCashDividend", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@TotalNumberOfCashCapitalIncrease", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@CashIncreaseSubscriptionRate", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@CashIncreaseSubscriptionPrice", DBNull.Value));
 
-                cmd.Parameters.AddWithValue("@AnnouncementDate", DbValue(item.AnnouncementDate));
-                cmd.Parameters.AddWithValue("@AnnouncementTime", DbValue(item.AnnouncementTime));
+                    cmd.Parameters.Add(new SqliteParameter("@RemunerationOfDirectorsAndSupervisors", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@ParticipateDistributionOfTotalShares", DBNull.Value));
 
-                cmd.ExecuteNonQuery();
-            }
+                    cmd.Parameters.Add(new SqliteParameter("@AnnouncementDate", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@AnnouncementTime", DBNull.Value));
+                },
+                bindValues: (cmd, x) =>
+                {
+                    cmd.Parameters["@StockId"].Value = x.StockId;
+                    cmd.Parameters["@Date"].Value = x.Date.ToString("yyyy-MM-dd");
+                    cmd.Parameters["@Year"].Value = _writer.DbValue(x.Year);
 
-            tx.Commit();
+                    cmd.Parameters["@StockEarningsDistribution"].Value = _writer.DbValue(x.StockEarningsDistribution);
+                    cmd.Parameters["@StockStatutorySurplus"].Value = _writer.DbValue(x.StockStatutorySurplus);
+                    cmd.Parameters["@StockExDividendTradingDate"].Value = _writer.DbValue(x.StockExDividendTradingDate);
+
+                    cmd.Parameters["@TotalEmployeeStockDividend"].Value = _writer.DbValue(x.TotalEmployeeStockDividend);
+                    cmd.Parameters["@TotalEmployeeStockDividendAmount"].Value = _writer.DbValue(x.TotalEmployeeStockDividendAmount);
+                    cmd.Parameters["@RatioOfEmployeeStockDividendOfTotal"].Value = _writer.DbValue(x.RatioOfEmployeeStockDividendOfTotal);
+                    cmd.Parameters["@RatioOfEmployeeStockDividend"].Value = _writer.DbValue(x.RatioOfEmployeeStockDividend);
+
+                    cmd.Parameters["@CashEarningsDistribution"].Value = _writer.DbValue(x.CashEarningsDistribution);
+                    cmd.Parameters["@CashStatutorySurplus"].Value = _writer.DbValue(x.CashStatutorySurplus);
+                    cmd.Parameters["@CashExDividendTradingDate"].Value = _writer.DbValue(x.CashExDividendTradingDate);
+                    cmd.Parameters["@CashDividendPaymentDate"].Value = _writer.DbValue(x.CashDividendPaymentDate);
+
+                    cmd.Parameters["@TotalEmployeeCashDividend"].Value = _writer.DbValue(x.TotalEmployeeCashDividend);
+                    cmd.Parameters["@TotalNumberOfCashCapitalIncrease"].Value = _writer.DbValue(x.TotalNumberOfCashCapitalIncrease);
+                    cmd.Parameters["@CashIncreaseSubscriptionRate"].Value = _writer.DbValue(x.CashIncreaseSubscriptionRate);
+                    cmd.Parameters["@CashIncreaseSubscriptionPrice"].Value = _writer.DbValue(x.CashIncreaseSubscriptionPrice);
+
+                    cmd.Parameters["@RemunerationOfDirectorsAndSupervisors"].Value = _writer.DbValue(x.RemunerationOfDirectorsAndSupervisors);
+                    cmd.Parameters["@ParticipateDistributionOfTotalShares"].Value = _writer.DbValue(x.ParticipateDistributionOfTotalShares);
+
+                    cmd.Parameters["@AnnouncementDate"].Value = _writer.DbValue(x.AnnouncementDate);
+                    cmd.Parameters["@AnnouncementTime"].Value = _writer.DbValue(x.AnnouncementTime);
+                });
         }
         public async Task SaveShareholdingToDb(List<StockShareholding> list)
         {
-            if (list == null || list.Count == 0) return;
-
-            await using var conn = new SqliteConnection(_connectionString);
-            await conn.OpenAsync();
-
-            await using var tx = await conn.BeginTransactionAsync();
-
-            await using var cmd = conn.CreateCommand();
-            cmd.Transaction = (SqliteTransaction?)tx;
-
-            cmd.CommandText = @"
+            const string sql = @"
                 INSERT INTO StockShareholding
                 (
                     StockId, Date, StockName, InternationalCode,
@@ -476,49 +497,47 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                     NumberOfSharesIssued = excluded.NumberOfSharesIssued,
                     RecentlyDeclareDate = excluded.RecentlyDeclareDate,
                     Note = excluded.Note;
-                ";
+            ";
 
-            // 先建參數（避免迴圈一直 Add）
-            var pStockId = cmd.CreateParameter(); pStockId.ParameterName = "@StockId"; cmd.Parameters.Add(pStockId);
-            var pDate = cmd.CreateParameter(); pDate.ParameterName = "@Date"; cmd.Parameters.Add(pDate);
-            var pStockName = cmd.CreateParameter(); pStockName.ParameterName = "@StockName"; cmd.Parameters.Add(pStockName);
-            var pInternationalCode = cmd.CreateParameter(); pInternationalCode.ParameterName = "@InternationalCode"; cmd.Parameters.Add(pInternationalCode);
+            await _writer.ExecuteAsync(
+                list,
+                sql,
+                createParameters: cmd =>
+                {
+                    cmd.Parameters.Add(new SqliteParameter("@StockId", ""));
+                    cmd.Parameters.Add(new SqliteParameter("@Date", ""));
+                    cmd.Parameters.Add(new SqliteParameter("@StockName", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@InternationalCode", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@ForeignInvestmentRemainingShares", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@ForeignInvestmentShares", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@ForeignInvestmentRemainRatio", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@ForeignInvestmentSharesRatio", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@ForeignInvestmentUpperLimitRatio", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@ChineseInvestmentUpperLimitRatio", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@NumberOfSharesIssued", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@RecentlyDeclareDate", DBNull.Value));
+                    cmd.Parameters.Add(new SqliteParameter("@Note", DBNull.Value));
+                },
+                bindValues: (cmd, x) =>
+                {
+                    cmd.Parameters["@StockId"].Value = x.StockId;
+                    cmd.Parameters["@Date"].Value = x.Date;
+                    cmd.Parameters["@StockName"].Value = _writer.DbValue(x.StockName);
+                    cmd.Parameters["@InternationalCode"].Value = _writer.DbValue(x.InternationalCode);
 
-            var pFirs = cmd.CreateParameter(); pFirs.ParameterName = "@ForeignInvestmentRemainingShares"; cmd.Parameters.Add(pFirs);
-            var pFis = cmd.CreateParameter(); pFis.ParameterName = "@ForeignInvestmentShares"; cmd.Parameters.Add(pFis);
-            var pFirRatio = cmd.CreateParameter(); pFirRatio.ParameterName = "@ForeignInvestmentRemainRatio"; cmd.Parameters.Add(pFirRatio);
-            var pFisRatio = cmd.CreateParameter(); pFisRatio.ParameterName = "@ForeignInvestmentSharesRatio"; cmd.Parameters.Add(pFisRatio);
-            var pFiUpper = cmd.CreateParameter(); pFiUpper.ParameterName = "@ForeignInvestmentUpperLimitRatio"; cmd.Parameters.Add(pFiUpper);
-            var pCnUpper = cmd.CreateParameter(); pCnUpper.ParameterName = "@ChineseInvestmentUpperLimitRatio"; cmd.Parameters.Add(pCnUpper);
+                    cmd.Parameters["@ForeignInvestmentRemainingShares"].Value = (object?)x.ForeignInvestmentRemainingShares ?? DBNull.Value;
+                    cmd.Parameters["@ForeignInvestmentShares"].Value = (object?)x.ForeignInvestmentShares ?? DBNull.Value;
+                    cmd.Parameters["@ForeignInvestmentRemainRatio"].Value = (object?)x.ForeignInvestmentRemainRatio ?? DBNull.Value;
+                    cmd.Parameters["@ForeignInvestmentSharesRatio"].Value = (object?)x.ForeignInvestmentSharesRatio ?? DBNull.Value;
+                    cmd.Parameters["@ForeignInvestmentUpperLimitRatio"].Value = (object?)x.ForeignInvestmentUpperLimitRatio ?? DBNull.Value;
+                    cmd.Parameters["@ChineseInvestmentUpperLimitRatio"].Value = (object?)x.ChineseInvestmentUpperLimitRatio ?? DBNull.Value;
 
-            var pIssued = cmd.CreateParameter(); pIssued.ParameterName = "@NumberOfSharesIssued"; cmd.Parameters.Add(pIssued);
-            var pDeclare = cmd.CreateParameter(); pDeclare.ParameterName = "@RecentlyDeclareDate"; cmd.Parameters.Add(pDeclare);
-            var pNote = cmd.CreateParameter(); pNote.ParameterName = "@Note"; cmd.Parameters.Add(pNote);
-
-            foreach (var x in list)
-            {
-                pStockId.Value = x.StockId;
-                pDate.Value = x.Date;
-
-                pStockName.Value = (object?)x.StockName ?? DBNull.Value;
-                pInternationalCode.Value = (object?)x.InternationalCode ?? DBNull.Value;
-
-                pFirs.Value = (object?)x.ForeignInvestmentRemainingShares ?? DBNull.Value;
-                pFis.Value = (object?)x.ForeignInvestmentShares ?? DBNull.Value;
-                pFirRatio.Value = (object?)x.ForeignInvestmentRemainRatio ?? DBNull.Value;
-                pFisRatio.Value = (object?)x.ForeignInvestmentSharesRatio ?? DBNull.Value;
-                pFiUpper.Value = (object?)x.ForeignInvestmentUpperLimitRatio ?? DBNull.Value;
-                pCnUpper.Value = (object?)x.ChineseInvestmentUpperLimitRatio ?? DBNull.Value;
-
-                pIssued.Value = (object?)x.NumberOfSharesIssued ?? DBNull.Value;
-                pDeclare.Value = (object?)x.RecentlyDeclareDate ?? DBNull.Value;
-                pNote.Value = (object?)x.Note ?? DBNull.Value;
-
-                await cmd.ExecuteNonQueryAsync();
-            }
-
-            await tx.CommitAsync();
+                    cmd.Parameters["@NumberOfSharesIssued"].Value = (object?)x.NumberOfSharesIssued ?? DBNull.Value;
+                    cmd.Parameters["@RecentlyDeclareDate"].Value = _writer.DbValue(x.RecentlyDeclareDate);
+                    cmd.Parameters["@Note"].Value = _writer.DbValue(x.Note);
+                });
         }
+
         private void EnsureTable()
         {
             using var conn = new SqliteConnection($"Data Source={_dbPath}");
@@ -686,19 +705,5 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
             }
             return result;
         }
-        string? EmptyToNull(string? s)
-            => string.IsNullOrWhiteSpace(s) ? null : s;
-
-        int ParseTwYear(string year)
-        {
-            // 98年 → 2009
-            var n = int.Parse(year.Replace("年", ""));
-            return n + 1911;
-        }
-        private static object DbValue(object? value)
-        {
-            return value ?? DBNull.Value;
-        }
-
     }
 }

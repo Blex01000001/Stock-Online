@@ -25,9 +25,6 @@ builder.Services.AddControllers()
     });// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-//builder.Services.AddSingleton(
-//    new StockDailyPriceService("stock.db")
-//);
 builder.Services.AddSignalR();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IStockRepository, StockRepository>();
