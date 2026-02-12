@@ -3,7 +3,7 @@
     public sealed class StockShareholding
     {
         public string StockId { get; set; }
-        public DateTime Date { get; set; }
+        public string Date { get; set; }
         public string? StockName { get; set; }
         public string? InternationalCode { get; set; }
         public long? ForeignInvestmentRemainingShares { get; set; }

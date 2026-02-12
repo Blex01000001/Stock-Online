@@ -42,6 +42,7 @@ builder.Services.AddScoped<IUpdateOrchestrator, UpdateOrchestrator>();
 builder.Services.AddScoped<IStockProvider, StockProvider>();
 builder.Services.AddScoped<IDataUpdater, PriceUpdater>();
 builder.Services.AddScoped<IDataUpdater, DividendUpdater>();
+builder.Services.AddScoped<IDataUpdater, ShareHoldingUpdater>();
 
 // 註冊 CORS 服務，這裡先定義一個全開的 Policy
 builder.Services.AddCors(options =>

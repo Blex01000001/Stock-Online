@@ -22,7 +22,7 @@ namespace Stock_Online.Controllers
             [FromQuery] string stockId,
             [FromQuery] int year,
             [FromQuery] int days
-)
+        )
         {
             Console.WriteLine($"{stockId} {year} {days}");
             if (string.IsNullOrWhiteSpace(stockId))

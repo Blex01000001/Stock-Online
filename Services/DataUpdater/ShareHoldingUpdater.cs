@@ -2,49 +2,49 @@
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
 using Stock_Online.DTOs;
+using Stock_Online.DTOs.UpdateRequest;
 using Stock_Online.Hubs;
 using System.Text.Json;
+using static System.Net.WebRequestMethods;
 
-namespace Stock_Online.Services.Update
+namespace Stock_Online.Services.DataUpdater
 {
-    public sealed class StockShareholdingUpdateService : IStockShareholdingUpdateService
+    public class ShareHoldingUpdater : IDataUpdater
     {
         private readonly HttpClient _http;
+
         private readonly IStockRepository _repo;
         private readonly IHubContext<StockUpdateHub> _hub;
 
+        public DataType DataType => DataType.ShareHoldingUpdater;
         private static readonly JsonSerializerOptions JsonOpt = new()
         {
             PropertyNameCaseInsensitive = true
         };
 
-        public StockShareholdingUpdateService(
-            IStockRepository repo,
-            IHubContext<StockUpdateHub> hub
-        )
+        public ShareHoldingUpdater(IStockRepository repo, IHubContext<StockUpdateHub> hub)
         {
-            _http = new HttpClient();
             _repo = repo;
             _hub = hub;
+            _http = new HttpClient();
         }
-
-        public async Task FetchAndSaveAsync(string stockId)
+        public async   Task UpdateAsync(string stockId, int year)
         {
-            var startDate = "1911-01-01"; //(FinMind 用 yyyy-MM-dd)
-            try{
+            var startDate = $"{year}-01-01"; //(FinMind 用 yyyy-MM-dd)
+            try
+            {
                 await ReportProgressAsync($"更新中 {stockId}");
                 var count = await FetchAndSaveAsync(stockId, startDate);
                 await ReportProgressAsync($"✅ 更新完成 {stockId}");
             }
-            catch (Exception ex){
+            catch (Exception ex)
+            {
                 await ReportProgressAsync($"❌ 更新失敗 {stockId} {ex.Message}");
             }
         }
 
         public async Task<int> FetchAndSaveAsync(string stockId, string startDate)
         {
-            //  API 
-            // https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockShareholding&data_id=2330&start_date=2026-02-01
             var url =
                 $"https://api.finmindtrade.com/api/v4/data" +
                 $"?dataset=TaiwanStockShareholding" +
@@ -61,7 +61,7 @@ namespace Stock_Online.Services.Update
             var entities = payload.Data.Select(d => new StockShareholding
             {
                 StockId = d.stock_id,
-                Date = (d.date),
+                Date = d.date,
 
                 StockName = d.stock_name,
                 InternationalCode = d.InternationalCode,

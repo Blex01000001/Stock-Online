@@ -233,7 +233,7 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                 result.Add(new StockShareholding
                 {
                     StockId = reader.GetString(reader.GetOrdinal("StockId")),
-                    Date = Convert.ToDateTime(reader.GetString(reader.GetOrdinal("Date"))),
+                    Date = reader.GetString(reader.GetOrdinal("Date")),
 
                     StockName = reader.IsDBNull(reader.GetOrdinal("StockName"))
                         ? null

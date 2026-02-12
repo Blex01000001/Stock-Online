@@ -142,8 +142,8 @@ namespace Stock_Online.Services.KLine.Builders
         }
         public KLineChartBuilder SetHolding(List<StockShareholding> stockShareholdings)
         {
-            int index = stockShareholdings.IndexOf(stockShareholdings.First(x => x.Date == _date));
-            _shareholdings = stockShareholdings.Skip(index).Take(_prices.Count).ToList();
+            int index = stockShareholdings.IndexOf(stockShareholdings.First(x => x.Date == _date.ToString("yyyy-MM-dd")));
+            _shareholdings = stockShareholdings.Skip(index).ToList();
             return this;
         }
     }
