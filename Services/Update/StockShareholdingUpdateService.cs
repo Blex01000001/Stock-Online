@@ -53,7 +53,7 @@ namespace Stock_Online.Services.Update
             using var resp = await _http.GetAsync(url);
             resp.EnsureSuccessStatusCode();
 
-            var payload = await resp.Content.ReadFromJsonAsync<FinMindResponse<TaiwanStockShareholdingDto>>(JsonOpt);
+            var payload = await resp.Content.ReadFromJsonAsync<FinMindResponse<ShareholdingDto>>(JsonOpt);
             if (payload == null) return 0;
             if (payload.Status != 200) return 0;
             if (payload.Data == null || payload.Data.Count == 0) return 0;

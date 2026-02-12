@@ -1,6 +1,6 @@
 ﻿namespace Stock_Online.DTOs
 {
-    public sealed class TaiwanStockShareholdingDto
+    public sealed class ShareholdingDto
     {
         public string date { get; set; } = "";               // "2026-02-02"
         public string stock_id { get; set; } = "";           // "2330"
