@@ -16,6 +16,7 @@ namespace Stock_Online.Services.KLine.Builders
         private readonly int _right;
         private DateTime _date;
         private List<StockShareholding> _shareholdings;
+        private InstitutionalSeriesDto _institutionalSeriesDto = new InstitutionalSeriesDto();
 
         public KLineChartBuilder(string stockId, IReadOnlyList<StockDailyPrice> prices, int currDayIndex, bool area = true)
         {
@@ -137,7 +138,8 @@ namespace Stock_Online.Services.KLine.Builders
                 StockId = _stockId,
                 Points = points,
                 MALines = maLines,
-                Shareholdings = _shareholdings
+                Shareholdings = _shareholdings,
+                Institutional = _institutionalSeriesDto
             };
         }
         public KLineChartBuilder SetHolding(List<StockShareholding> stockShareholdings)
@@ -163,6 +165,55 @@ namespace Stock_Online.Services.KLine.Builders
 
             int index = stockShareholdings.IndexOf(matched);
             _shareholdings = stockShareholdings.Skip(index).ToList();
+
+            return this;
+        }
+        public KLineChartBuilder SetInstitutional(List<StockInstitutionalInvestorsBuySell> institutionalInvestorsBuySell)
+        {
+            if (institutionalInvestorsBuySell == null || institutionalInvestorsBuySell.Count == 0)
+            {
+                return this;
+            }
+
+            string targetDate = _date.ToString("yyyy-MM-dd");
+
+            var matched = institutionalInvestorsBuySell
+                .Where(x => x.Date.CompareTo(targetDate) <= 0)
+                .OrderByDescending(x => x.Date)
+                .FirstOrDefault();
+
+            int index = institutionalInvestorsBuySell.IndexOf(matched);
+
+
+            _institutionalSeriesDto.Daily = institutionalInvestorsBuySell
+                .GroupBy(x => x.Date)
+                .OrderBy(g => g.Key)
+                .Select(g =>
+                {
+                    long GetNet(string name) =>
+                        g.Where(x => x.Name == name).Sum(x => x.Buy - x.Sell);
+
+                    var foreignInvestor = GetNet("Foreign_Investor");
+                    var foreignDealerSelf = GetNet("Foreign_Dealer_Self");
+                    var dealerSelf = GetNet("Dealer_self");
+                    var dealerHedging = GetNet("Dealer_Hedging");
+                    var investTrust = GetNet("Investment_Trust");
+
+                    return new InstitutionalDailyDto
+                    {
+                        Date = g.Key,
+
+                        ForeignInvestorNet = foreignInvestor,
+                        ForeignDealerSelfNet = foreignDealerSelf,
+                        DealerSelfNet = dealerSelf,
+                        DealerHedgingNet = dealerHedging,
+
+                        ForeignNet = foreignInvestor + foreignDealerSelf,
+                        DealerNet = dealerSelf + dealerHedging,
+                        InvestmentTrustNet = investTrust
+                    };
+                })
+                .ToList();
 
             return this;
         }

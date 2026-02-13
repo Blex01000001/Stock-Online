@@ -45,7 +45,16 @@ namespace Stock_Online.Services.KLine
                 .OrderBy(x => x.Date)
                 .ToList();
 
-            return new List<KLineChartDto> { new KLineChartBuilder(stockId, pricesAll, index, false).SetHolding(StockShareholding).CreateSingle() };
+            Query InstitutionalQuery = new Query("StockInstitutionalInvestorsBuySell").Where("StockId", stockId);
+            List<StockInstitutionalInvestorsBuySell> institutionalInvestorsBuySells = (await _repo.GetInstitutionalInvestorsBuySellAsync(InstitutionalQuery))
+                .OrderBy(x => x.Date)
+                .ToList();
+
+            return new List<KLineChartDto> { new KLineChartBuilder(stockId, pricesAll, index, false)
+                .SetHolding(StockShareholding)
+                .SetInstitutional(institutionalInvestorsBuySells)
+                .CreateSingle()
+            };
         }
         public async Task<List<KLineChartDto>> GetKPatternLineAsync(string stockId, CandlePattern candlePattern)
         {
