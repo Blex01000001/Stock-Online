@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Stock Master - 專業股票決策系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --primary-color: #1e293b;
+            --accent-color: #3b82f6;
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', "Segoe UI", "Microsoft JhengHei", sans-serif;
+            background: var(--bg-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 1. 修改側邊欄：預設移出螢幕外 */
+        #Sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary-color);
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            transition: transform var(--transition-speed) ease;
+            position: fixed;
+            /* 固定位置，不影響右側欄寬 */
+            left: 0;
+            top: 0;
+            bottom: 0;
+            transform: translateX(-100%);
+            /* 預設隱藏 */
+            z-index: 1001;
+            /* 高於遮罩 */
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 當啟動時，側邊欄滑入 */
+        body.sidebar-open #Sidebar {
+            transform: translateX(0);
+        }
+
+        /* 2. 新增遮罩樣式 */
+        #Overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            /* 變暗效果 */
+            z-index: 1000;
+            transition: opacity var(--transition-speed);
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        nav {
+            flex: 1;
+            padding: 16px 0;
+        }
+
+        .nav-item {
+            padding: 14px 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+            color: #cbd5e1;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        .nav-item.active {
+            background: var(--accent-color);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        #MainContent {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            width: 100%;
+            /* 確保寬度佔滿 */
+        }
+
+        #Header {
+            height: 45px;
+            background: #fff;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+        }
+
+        #PageTitle {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        #IframeContainer {
+            flex: 1;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+        }
+
+        #ToggleBtn {
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            padding: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="Overlay" onclick="toggleSidebar()"></div>
+
+    <aside id="Sidebar">
+        <div class="sidebar-header"><i class="fa-solid fa-arrow-trend-up"></i><span>Stock Master</span></div>
+        <nav>
+            <div class="nav-item active" onclick="loadPage('stock-kline.html', '個股K線查詢', this)">
+                <i class="fa-solid fa-chart-line"></i> <span>個股K線</span>
+            </div>
+            <div class="nav-item" onclick="loadPage('stock-PatternKline.html', '組合K線查詢', this)">
+                <i class="fa-solid fa-chart-area"></i> <span>組合K線</span>
+            </div>
+            <div class="nav-item" onclick="loadPage('stock-Annual Review.html', '年報概況', this)">
+                <i class="fa-solid fa-calendar-days"></i> <span>年報概況</span>
+            </div>
+            <div class="nav-item" onclick="loadPage('stock-update.html', '資料更新管理', this)">
+                <i class="fa-solid fa-arrows-rotate"></i> <span>資料更新</span>
+            </div>
+        </nav>
+    </aside>
+
+    <main id="MainContent">
+        <header id="Header">
+            <div id="ToggleBtn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></div>
+            <div id="PageTitle">個股K線查詢</div>
+            <div id="currentTime" style="font-size: 0.9rem; color: #64748b;"></div>
+        </header>
+        <div id="IframeContainer">
+            <iframe id="targetFrame" src="stock-kline.html"></iframe>
+        </div>
+    </main>
+
+    <script>
+        // 修正後的切換函式
+        function toggleSidebar() {
+            const isOpen = document.body.classList.toggle('sidebar-open');
+            const overlay = document.getElementById('Overlay');
+            // 控制遮罩顯示與隱藏
+            overlay.style.display = isOpen ? 'block' : 'none';
+        }
+
+        function loadPage(url, title, el) {
+            document.getElementById('targetFrame').src = url;
+            document.getElementById('PageTitle').innerText = title;
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+
+            // 點擊選單後若側邊欄是打開的，則自動關閉（適合手機或小螢幕體驗）
+            if (document.body.classList.contains('sidebar-open')) {
+                toggleSidebar();
+            }
+        }
+
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString('zh-TW', { hour12: false });
+            document.getElementById('currentTime').innerText = timeStr;
+        }, 1000);
+    </script>
+</body>
+
+</html>

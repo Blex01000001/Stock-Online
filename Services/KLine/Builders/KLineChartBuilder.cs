@@ -42,6 +42,9 @@ namespace Stock_Online.Services.KLine.Builders
                 .ToList();
 
             _index = currDayIndex - _left;
+
+            
+
             _date = prices[currDayIndex].TradeDate;
         }
 

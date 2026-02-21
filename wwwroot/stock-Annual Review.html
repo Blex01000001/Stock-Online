@@ -3,93 +3,98 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>個股K線</title>
-
-    <!-- ECharts -->
-    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
-
+    <title>年報概況</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
-            background: #f0f2f5;
+        :root {
+            --primary: #1e293b;
+            --accent: #3b82f6;
+            --bg: #f8fafc;
         }
 
-        /* 整條工具列（參考 stock-line.html） */
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: 'Inter', "Microsoft JhengHei", sans-serif;
+        }
+
         #InputArea {
             position: sticky;
             top: 0;
             z-index: 100;
-            background: #ffffff;
-            border-bottom: 1px solid #ddd;
-            padding: 10px;
+            background: #fff;
+            padding: 5px 24px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-bottom: 1px solid #e2e8f0;
         }
 
         #QueryArea {
             display: flex;
-            gap: 6px;
-            align-items: center;
-            background: #e3f2fd;
-            padding: 6px;
+            gap: 8px;
+            background: #fff7ed;
+            padding: 8px 12px;
             border-radius: 8px;
+            align-items: center;
         }
 
         input,
         button {
-            padding: 4px 6px;
+            font-size: 16px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            outline: none;
+        }
+
+        button {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
         }
 
         .page {
-            max-width: 1200px;
-            margin: 0px;
-            padding: 1px;
+            padding: 24px;
         }
 
-        .chart-card {
-            background: #ffffff;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            padding: 8px 8px 16px 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
         }
 
-        #chartList {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(800px, 1fr));
-            gap: 12px;
+        .chart-card h3 {
+            text-align: center;
+            /* ⭐ 置中 */
+            padding: 1px 0 8px 0;
+            /* ⭐ 上 下 padding */
+            margin: 0 0 1px 0;
+            /* 與表格拉開距離 */
+            font-size: 20px;
+            /* 標題字體大小 */
+            font-weight: 600;
+            letter-spacing: 1px;
+            /* 字距（可選） */
         }
 
-        .chart-box {
-            height: 400px;
-        }
-
-        .hint {
-            font-size: 12px;
-            color: #666;
-            margin: 8px 0 0 2px;
-        }
-
-        #QuickRangeArea {
-            display: flex;
-            gap: 6px;
-        }
-
-        #QuickRangeArea button {
-            padding: 4px 8px;
-            font-size: 12px;
-            cursor: pointer;
-        }
+        /* table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 20px;
+        } */
 
         /* ===== 表格基礎 ===== */
         .annual-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 16px;
-            line-height: 1.2;
+            font-size: 18px;
+            line-height: 1.5;
         }
 
         /* ===== 表頭 ===== */
@@ -131,34 +136,32 @@
             background-color: #ffe3e3 !important;
         }
 
-        .chart-card h3 {
-            text-align: center;
-            /* ⭐ 置中 */
-            padding: 1px 0 8px 0;
-            /* ⭐ 上 下 padding */
-            margin: 0 0 1px 0;
-            /* 與表格拉開距離 */
-            font-size: 30px;
-            /* 標題字體大小 */
+        th {
+            background: #f8fafc;
+            color: #64748b;
             font-weight: 600;
-            letter-spacing: 1px;
-            /* 字距（可選） */
+            text-align: left;
+            padding: 12px;
+            border-bottom: 2px solid #e2e8f0;
         }
 
-        .annual-table .pos {
-            color: #d32f2f;
-            /* 紅 */
-            font-weight: 500;
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f5f9;
         }
 
-        .annual-table .neg {
-            color: #388e3c;
-            /* 綠 */
-            font-weight: 500;
+        tr:hover {
+            background: #f0f7ff;
         }
 
-        .annual-table tbody tr:hover {
-            background-color: #f0f7ff;
+        .pos {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        .neg {
+            color: #22c55e;
+            font-weight: 600;
         }
     </style>
 </head>
@@ -166,21 +169,14 @@
 <body>
     <div id="InputArea">
         <div id="QueryArea">
-            <input type="text" id="inputStockID" placeholder="股票代號" style="width:80px;">
-            <button onclick="addAnnualTable()">加入年度總覽</button>
+            <input type="text" id="inputStockId" placeholder="股票代號">
+            <button onclick="addAnnualTable()">生成年報概況</button>
         </div>
     </div>
-
-    <div class="page">
-        <!-- <div class="hint">
-            ※ 每按一次搜尋就會在最上方新增表格
-        </div>-->
-        <div id="tableList"></div>
-    </div>
-
+    <div class="page" id="TableList"></div>
     <script>
         // 你原本是 7278，這裡沿用；需要的話自行改成 https / ngrok
-        const apiBase = "http://localhost:7278";
+        const apiBase = "http://localhost:5274";
 
         /**
          * 你後端回傳的資料格式我不知道你現在長什麼樣，
@@ -192,7 +188,7 @@
          * 你只要讓欄位對得上，就能畫出來。
          */
         async function addAnnualTable() {
-            const stockId = document.getElementById("inputStockID").value.trim();
+            const stockId = document.getElementById("inputStockId").value.trim();
             if (!stockId) {
                 alert("請輸入股票代號");
                 return;
@@ -209,7 +205,7 @@
         }
 
         function renderAnnualTable(stockId, rows) {
-            const tableList = document.getElementById("tableList");
+            const tableList = document.getElementById("TableList");
 
             const card = document.createElement("div");
             card.className = "chart-card";
@@ -270,16 +266,7 @@
             tableList.prepend(card);
         }
 
-
-
-
-
-
-
-
-
     </script>
-
 </body>
 
 </html>

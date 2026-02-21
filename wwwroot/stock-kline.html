@@ -3,85 +3,109 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>個股K線</title>
-
-    <!-- ECharts -->
+    <title>個股K線 - 進階分析 (含外資動向)</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
-
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
-            background: #f0f2f5;
+        :root {
+            --primary: #1e293b;
+            --accent: #3b82f6;
+            --bg: #f8fafc;
         }
 
-        /* 整條工具列（參考 stock-line.html） */
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: 'Inter', "Microsoft JhengHei", sans-serif;
+        }
+
         #InputArea {
             position: sticky;
             top: 0;
             z-index: 100;
-            background: #ffffff;
-            border-bottom: 1px solid #ddd;
-            padding: 10px;
+            background: #fff;
+            padding: 10px 24px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-bottom: 1px solid #e2e8f0;
+            flex-wrap: wrap;
         }
 
         #QueryArea {
             display: flex;
-            gap: 6px;
-            align-items: center;
-            background: #e3f2fd;
-            padding: 6px;
+            gap: 8px;
+            background: #eff6ff;
+            padding: 8px 12px;
             border-radius: 8px;
+            align-items: center;
         }
 
         input,
+        button,
+        select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 16px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
         button {
-            padding: 4px 6px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            font-size: 16px;
+            background: #fff;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-outline:hover {
+            background: #f1f5f9;
         }
 
         .page {
-            max-width: 1200px;
-            margin: auto;
-            padding: 8px 16px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         .chart-card {
-            background: #ffffff;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            padding: 8px 8px 16px 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #f1f5f9;
         }
 
-        #chartList {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(800px, 1fr));
-            gap: 12px;
-        }
-
-        .chart-box {
-            height: 400px;
+        /* 調整高度以容納多個圖表 */
+        .chart-container {
+            width: 100%;
+            height: 650px;
         }
 
         .hint {
             font-size: 12px;
-            color: #666;
-            margin: 0px 0 0 2px;
-        }
-
-        #QuickRangeArea {
-            display: flex;
-            gap: 6px;
-        }
-
-        #QuickRangeArea button {
-            padding: 4px 8px;
-            font-size: 12px;
-            cursor: pointer;
+            color: #64748b;
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -89,467 +113,293 @@
 <body>
     <div id="InputArea">
         <div id="QueryArea">
-            <input type="text" id="inputStockIDField" placeholder="股票代號" style="width:60px;">
-
+            <input type="text" id="inputStockId" placeholder="股票代號" style="width: 100px;">
             <input type="date" id="inputStartDate">
+            <span>至</span>
             <input type="date" id="inputEndDate">
-            <div id="QuickRangeArea">
-                <button onclick="setRecentYears(1)">近 1 年</button>
-                <button onclick="setRecentYears(2)">近 2 年</button>
-                <button onclick="setRecentYears(3)">近 3 年</button>
-                <button onclick="setRecentYears(5)">近 5 年</button>
-                <button onclick="setRecentYears(10)">近 10 年</button>
-            </div>
-
-            <button onclick="addKline()">加入個股K線</button>
-            <!--
-            <select id="inputPattern">
-                <option value="">-- Pattern --</option>
-                <option value="FlatBottom">平頭底 FlatBottom</option>
-                <option value="Hammer">錘子線 Hammer</option>
-                <option value="DuskStar">黃昏之星 DuskStar</option>
-            </select>
-            <button onclick="searchStockPattern()">搜尋個股 Pattern</button>
-            <button onclick="searchPatternAll()">搜尋 Pattern</button>
-            -->
+            <button onclick="addKline()">查詢 K 線</button>
         </div>
+
+        <div id="QuickRangeArea" style="display: flex; gap: 6px;">
+            <button class="btn-outline" onclick="setRecentYears(1)">1年</button>
+            <button class="btn-outline" onclick="setRecentYears(3)">3年</button>
+            <button class="btn-outline" onclick="setRecentYears(5)">5年</button>
+            <button class="btn-outline" onclick="setRecentYears(10)">10年</button>
+        </div>
+        <button class="btn-outline" style="margin-left: auto;" onclick="clearChartList()">清空圖表</button>
     </div>
 
     <div class="page">
-        <div class="hint">
-            ※ 每按一次搜尋就會在最上方新增一張 K 線圖卡片
-        </div>
-        <div id="chartList"></div>
+        <div class="hint">※ 每按一次搜尋就會在最上方新增一張含有外資動向的 K 線圖卡片</div>
+        <div id="ChartList"></div>
     </div>
 
     <script>
-        // 你原本是 7278，這裡沿用；需要的話自行改成 https / ngrok
         const apiBase = "http://localhost:7278";
 
-        /**
-         * 你後端回傳的資料格式我不知道你現在長什麼樣，
-         * 所以這裡支援兩種常見格式：
-         *
-         * A) data.result = [{ date, open, high, low, close, volume }, ...]
-         * B) data.result = [{ tradeDate, openPrice, highPrice, lowPrice, closePrice, volume }, ...]
-         *
-         * 你只要讓欄位對得上，就能畫出來。
-         */
-        async function addKline() {
-            const stockId = getStockId();
-            if (!stockId) return;
+        initDefaultDateRange();
 
-            const { start, end } = getDateRange();
-
-            const url =
-                `${apiBase}/chart/kline` +
-                `?stockId=${encodeURIComponent(stockId)}` +
-                `&start=${start}&end=${end}`;
-
-            const list = await fetchJson(url);
-            appendCharts(list);
-        }
-        async function searchStockPattern() {
-            const stockId = getStockId();
-            const pattern = getPattern();
-
-            if (!stockId || !pattern) {
-                alert("請輸入股票代號並選擇 Pattern");
-                return;
-            }
-
-            const { start, end } = getDateRange();
-
-            const url =
-                `${apiBase}/chart/kline/pattern` +
-                `?stockId=${encodeURIComponent(stockId)}` +
-                `&pattern=${pattern}` +
-                `&start=${start}&end=${end}`;
-
-            const list = await fetchJson(url);
-            appendCharts(list);
-        }
-        async function searchPatternAll() {
-            const pattern = getPattern();
-            if (!pattern) {
-                alert("請選擇 Pattern");
-                return;
-            }
-
-            const url =
-                `${apiBase}/chart/kline/pattern/all-stock` +
-                `?pattern=${pattern}`;
-
-            const list = await fetchJson(url);
-            appendCharts(list);
-        }
-
-        function appendCharts(list) {
-            if (!Array.isArray(list) || list.length === 0) {
-                alert("沒有資料");
-                return;
-            }
-
-            for (const dto of list) {
-                renderKline(
-                    dto.stockId,
-                    dto.points,
-                    dto.maLines,
-                    dto.markers,
-                    dto.markLines
-                );
-            }
-        }
-
-        function getStockId() {
-            const v = document.getElementById("inputStockIDField").value?.trim();
-            if (!v) {
-                alert("請輸入股票代號");
-                return null;
-            }
-            return v;
-        }
-
-        function getPattern() {
-            return document.getElementById("inputPattern").value;
-        }
-
-        function normalizeDate(dateStr) {
-            // "" → ""
-            if (!dateStr) return "";
-            // "2025-01-01" → "20250101"
-            return dateStr.replaceAll("-", "");
-        }
-
-        function getDateRange() {
-            const startRaw = document.getElementById("inputStartDate").value;
-            const endRaw = document.getElementById("inputEndDate").value;
-
+        function getInputs() {
             return {
-                start: normalizeDate(startRaw),
-                end: normalizeDate(endRaw)
+                stockId: document.getElementById("inputStockId").value.trim(),
+                start: document.getElementById("inputStartDate").value.replaceAll("-", ""),
+                end: document.getElementById("inputEndDate").value.replaceAll("-", "")
             };
         }
 
         async function fetchJson(url) {
-            let res;
             try {
-                res = await fetch(url);
-            } catch {
-                alert("API 連線失敗");
-                return [];
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`API 錯誤: ${res.status}`);
+                return await res.json();
+            } catch (err) {
+                console.error(err);
+                alert("請求失敗，請檢查 API 連線狀況");
+                return null;
             }
-
-            if (!res.ok) {
-                const t = await res.text();
-                alert(`API 錯誤 ${res.status}\n${t}`);
-                return [];
-            }
-
-            return await res.json();
         }
 
+        async function addKline() {
+            const { stockId, start, end } = getInputs();
+            if (!stockId) return alert("請輸入代號");
+            const url = `${apiBase}/chart/kline?stockId=${encodeURIComponent(stockId)}&start=${start}&end=${end}`;
+            const list = await fetchJson(url);
+            if (list) appendCharts(list);
+        }
 
-        function renderKline(stockId, rows, maLines, markers, markLines) {
+        function appendCharts(list) {
+            if (!Array.isArray(list) || list.length === 0) return alert("查設無資料");
+            list.forEach(dto => {
+                // 整合傳入 institutionalDaily 參數
+                renderChartCard(
+                    (dto.stockId ?? dto.StockId),
+                    (dto.points ?? dto.Points),
+                    (dto.maLines ?? dto.MALines),
+                    (dto.markers ?? dto.Markers),
+                    (dto.markLines ?? dto.MarkLines),
+                    (dto.shareholdings ?? dto.Shareholdings),
+                    (dto.institutional?.daily ?? dto.Institutional?.Daily)
+                );
+            });
+        }
 
-            // === K 線 DTO 格式檢查（date + value[4]） ===
-            const clean = rows.filter(p =>
-                typeof p.date === "string" &&
-                Array.isArray(p.value) &&
-                p.value.length === 4 &&
-                p.value.every(v => Number.isFinite(v))
-            );
+        function renderChartCard(stockId, rows, maLines = [], markers = [], markLines = [], shareholdings = [], institutionalDaily = []) {
+            const clean = rows.filter(p => p.date && Array.isArray(p.value));
+            if (clean.length === 0) return;
 
-            if (clean.length === 0) {
-                //alert("資料格式不符合（K 線 value 異常）");
-                return;
-            }
-
-            // === 1) 建立卡片 DOM（跟你的折線圖一致：prepend 新圖到最上方） ===
-            const chartList = document.getElementById("chartList");
+            const cardId = "card-" + Math.random().toString(36).substr(2, 9);
+            const containerId = "chart-" + Math.random().toString(36).substr(2, 9);
 
             const card = document.createElement("div");
             card.className = "chart-card";
+            card.id = cardId;
+            card.innerHTML = `
+                <div style="display:flex; justify-content:flex-end; margin-bottom:10px; align-items:center; position: relative;">
+                    <strong style="font-size:1.2rem; color:#1e293b; position: absolute; left: 50%; transform: translateX(-50%);">
+                        ${stockId} - 綜合分析
+                    </strong>
+                    <button class="btn-outline" style="padding:4px 8px;" onclick="document.getElementById('${cardId}').remove()">移除</button>
+                </div>                
+                <div id="${containerId}" class="chart-container"></div>
+            `;
+            document.getElementById("ChartList").prepend(card);
 
-            const chartDiv = document.createElement("div");
-            chartDiv.className = "chart-box";
+            const myChart = echarts.init(document.getElementById(containerId));
 
-            card.appendChild(chartDiv);
-            chartList.prepend(card);
-
-            const markPoints = (markers ?? [])
-                .map(m => {
-                    const idx = clean.findIndex(p => p.date === m.date);
-                    if (idx === -1) return null;
-
-                    return {
-                        coord: [idx, clean[idx].value[3]], // 高點
-                        name: m.label,
-                        type: m.type
-                    };
-                })
-                .filter(Boolean);
-
-            const lineData = (markLines ?? [])
-                .map(l => {
-                    const idx = clean.findIndex(p => p.date === l.date);
-                    if (idx === -1) return null;
-
-                    const low = clean[idx].value[2];
-                    const high = clean[idx].value[3];
-                    const range = high - clean[idx].value[2];
-                    const yTop = high * 1.015;
-                    const isUp = l.type === "Up";
-
-                    return [
-                        { coord: [idx, high * 1.01], label: l.label },      // ⭐ 上方起點
-                        { coord: [idx, high * 1.002] }    // ⭐ 箭頭指向 K 線
-                    ];
-                })
-                .filter(Boolean);
-
-
-            // === 2) 準備 ECharts 資料 ===
             const xData = clean.map(p => p.date);
-
-            // ECharts candlestick data: [open, close, low, high]
             const kData = clean.map(p => p.value);
-            const volData = clean.map(p => p.volume ?? 0);
+            const volData = clean.map(p => p.volume || 0);
+            const volColor = clean.map(p => p.value[1] >= p.value[0] ? 1 : -1);
 
-            // 簡單的漲跌顏色分類（成交量柱狀）
-            const volColor = clean.map(p => {
-                const [open, close] = p.value;
-                return close >= open ? 1 : -1;
+            // --- 外資持股與買賣超資料處理 ---
+            const shareMap = new Map();
+            (shareholdings || []).forEach(s => {
+                if (s && s.date) shareMap.set(String(s.date).slice(0, 10), s.foreignInvestmentSharesRatio);
             });
+            const shareData = xData.map(d => shareMap.get(d) ?? null);
 
-            const maSeries = maLines.map(ma => ({
-                name: ma.name,
-                type: "line",
-                data: ma.values,
-                smooth: true,
-                showSymbol: false,
-                lineStyle: {
-                    width: 1
-                }
+            const foreignNetMap = new Map();
+            (institutionalDaily || []).forEach(r => {
+                const d = String(r.date ?? r.Date).slice(0, 10);
+                foreignNetMap.set(d, Number(r.foreignNet ?? r.ForeignNet));
+            });
+            const foreignNetData = xData.map(d => foreignNetMap.get(d) ?? null);
+
+            // 標記處理
+            const markPoints = (markers || []).map(m => {
+                const idx = clean.findIndex(p => p.date === m.date);
+                return idx === -1 ? null : { coord: [idx, clean[idx].value[3]], name: m.label, type: m.type };
+            }).filter(Boolean);
+
+            const lineData = (markLines || []).map(l => {
+                const idx = clean.findIndex(p => p.date === l.date);
+                if (idx === -1) return null;
+                return [
+                    { coord: [idx, clean[idx].value[3] * 1.01], label: l.label },
+                    { coord: [idx, clean[idx].value[3] * 1.002] }
+                ];
+            }).filter(Boolean);
+
+            const maSeries = (maLines || []).map(ma => ({
+                name: ma.name, type: "line", data: ma.values, smooth: true, showSymbol: false, lineStyle: { width: 1 }
             }));
 
-
-            // === 3) 初始化圖表 ===
-            const chart = echarts.init(chartDiv);
-
+            // --- 套用 updated2.html 的 Option 佈局 ---
             const option = {
-                title: {
-                    text: `${stockId} K 線圖`,
-                    left: "center",
-                    top: 10
-                },
-                tooltip: {
-                    trigger: "axis",
-                    axisPointer: { type: "cross" },
-                    valueFormatter: (value) => {
-                        // tooltip 會把 array 也丟進來，這裡讓它別爆炸
-                        if (Array.isArray(value)) return value.join(", ");
-                        if (typeof value === "number") return value.toString();
-                        return value;
-                    }
-                },
-                legend: {
-                    top: 40,
-                    left: "center"
-                },
-                grid: [
-                    { top: 90, left: 70, right: 30, height: 180 },  // K 線
-                    { left: 70, right: 30, top: 330, height: 70 }   // 成交量
-                ],
-                xAxis: [
+                title: [
                     {
-                        type: "category",
-                        data: xData,
-                        boundaryGap: false,
-                        axisLabel: {
-                            fontSize: 10,
-                            rotate: 90,
-                            margin: 12,
-                            formatter: (value) => {
-                                // value = "2025-12-01"
-                                return value.slice(2); // "25-12-01"
-                            }
-                        },
-                        axisLine: { onZero: false },
-                        splitLine: { show: false },
-                        min: "dataMin",
-                        max: "dataMax"
-                    },
-                    {
-                        type: "category",
-                        data: xData,
-                        gridIndex: 1,
-                        boundaryGap: false,
-                        axisLabel: { show: false },
-                        axisTick: { show: false },
-                        axisLine: { show: false },
-                        splitLine: { show: false },
-                        min: "dataMin",
-                        max: "dataMax"
-                    }
-                ],
-                yAxis: [
-                    {
-                        scale: true,
-                        axisLabel: { fontSize: 11 },
-                        splitLine: {
-                            lineStyle: { type: "dashed", opacity: 0.6 }
+                        text: `成交量`,
+                        left: 62,
+                        top: 365,
+                        textStyle: {
+                            fontSize: 14,
+                            fontFamily: 'Inter, "Microsoft JhengHei", "PingFang SC", sans-serif'
                         }
                     },
                     {
-                        scale: true,
+                        text: `外資持股 & 買賣超`,
+                        left: 63,
+                        top: 460,
+                        textStyle: {
+                            fontSize: 14,
+                            fontFamily: 'Inter, "Microsoft JhengHei", "PingFang SC", sans-serif'
+                        }
+                    }
+                ],
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross' },
+                    // Tooltip 數值同步格式化
+                    valueFormatter: (v) => (typeof v === 'number' && !v.toString().includes('.')) ? formatFlowValue(v) : v
+                },
+                legend: {
+                    top: 5, // 向上移動圖例
+                    data: ['K線', '成交量', '外資買賣超', '外資佔股比%', ...maSeries.map(m => m.name)]
+                },
+                grid: [
+                    { top: 40, left: 70, right: 60, height: 300 },  // K 線：Top 由 90 改為 40
+                    { left: 70, right: 60, top: 380, height: 80 },  // 成交量
+                    { left: 70, right: 60, top: 480, height: 100 }  // 外資區
+                ],
+                xAxis: [
+                    { type: 'category', data: xData, boundaryGap: false, axisLine: { onZero: false }, splitLine: { show: false } },
+                    { type: 'category', gridIndex: 1, data: xData, axisLabel: { show: false }, axisTick: { show: false } },
+                    { type: 'category', gridIndex: 2, data: xData, axisLabel: { show: false }, axisTick: { show: false } }
+                ],
+                yAxis: [
+                    { scale: true, splitLine: { lineStyle: { type: 'dashed', opacity: 0.6 } } }, // K線主圖
+                    {
                         gridIndex: 1,
-                        axisLabel: { fontSize: 11 },
-                        splitLine: { show: false }
+                        scale: true,
+                        // 修改：開啟成交量分隔線，設定為淺色虛線
+                        splitLine: {
+                            show: true,
+                            lineStyle: { type: 'dashed', color: '#e2e8f0', opacity: 0.8 }
+                        },
+                        axisLabel: { formatter: (v) => formatFlowValue(v) }
+                    },
+                    {
+                        gridIndex: 2, scale: true, position: 'right',
+                        axisLabel: { formatter: '{value}%' }, splitLine: { show: false } // 佔比維持隱藏
+                    },
+                    {
+                        gridIndex: 2,
+                        scale: true,
+                        position: 'left',
+                        // 修改：開啟外資買賣超分隔線
+                        splitLine: {
+                            show: true,
+                            lineStyle: { type: 'dashed', color: '#e2e8f0', opacity: 0.8 }
+                        },
+                        axisLabel: { formatter: (v) => formatFlowValue(v) }
                     }
                 ],
                 dataZoom: [
-                    { type: "inside", xAxisIndex: [0, 1], start: 0, end: 100 },
-                    { type: "slider", xAxisIndex: [0, 1], top: 540, height: 20, start: 0, end: 100 }
+                    { type: 'inside', xAxisIndex: [0, 1, 2], start: 0, end: 100 },
+                    { type: 'slider', xAxisIndex: [0, 1, 2], top: 600, height: 20 }
                 ],
                 series: [
                     {
-                        name: "K線",
-                        type: "candlestick",
-                        data: kData,
+                        name: 'K線', type: 'candlestick', data: kData,
+                        itemStyle: { color: '#ef4444', color0: '#22c55e', borderColor: '#ef4444', borderColor0: '#22c55e' },
                         markPoint: {
-                            symbol: "pin",  //pin / triangle / diamond / arrow / circle
-                            symbolSize: [40, 40], // 圖案大小 數字 or [w, h]）
-                            symbolOffset: [0, -10], // 圖案位置微調（x, y）
-                            symbolRotate: 0,
-                            itemStyle: {
-                                color: "#FF5050",    // 圖案顏色
-                                borderColor: "#FF5050",        // 邊框顏色
-                                borderWidth: 1
-                            },
-                            label: {
-                                show: true,
-                                // ===== 文字內容 =====
-                                formatter: p => p.name,     // 你現在用的 label
-
-                                // ===== 字體 =====
-                                fontSize: 14,               // ⭐ 文字大小（最常調）
-                                //fontWeight: "bold",         // normal / bold / bolder
-                                fontFamily: "Segoe UI",     // 可選
-
-                                // ===== 顏色 =====
-                                color: "#000",              // ⭐ 文字顏色
-
-                                // ===== 文字背景 =====
-                                //backgroundColor: "rgba(255,255,255,0.9)",
-                                //borderColor: "#ff9800",
-                                //borderWidth: 1,
-                                //borderRadius: 4,
-                                //padding: [2, 6],            // ⭐ 上下 / 左右 padding
-
-                                // ===== 文字位置 =====
-                                position: "inside",            // top / bottom / left / right / inside
-                                distance: 0               // ⭐ 文字與圖案的距離
-                            },
+                            symbol: "pin", symbolSize: [40, 40],
+                            label: { show: true, color: '#000', fontSize: 12, position: 'inside' },
                             data: markPoints
                         },
                         markLine: {
-                            symbol: ["none", "arrow"],
-                            symbolSize: [6, 10],
-                            //symbolOffset: [0, 0], // 圖案位置微調（x, y）
-                            label: {
-                                show: true,
-                                position: "start",           // start / middle / end
-                                formatter: p => p.data.label,    // 或 p.data?.label
-                                fontSize: 14,
-                                color: "#e53935",
-                                backgroundColor: "rgba(255,255,255,1)",
-                                borderRadius: 4,
-                                padding: [2, 6],
-                                distance: 0
-                            },
-                            lineStyle: {
-                                color: "#e53935",          // 線顏色
-                                width: 2,                  // 線寬
-                                type: "solid",             // solid / dashed / dotted
-                                opacity: 0.9               // 透明度
-                            },
+                            symbol: ['none', 'arrow'], symbolSize: [6, 10],
+                            lineStyle: { color: '#e53935', width: 2 },
+                            label: { show: true, position: 'start', backgroundColor: '#fff', padding: [2, 4] },
                             data: lineData
                         }
                     },
                     ...maSeries,
                     {
-                        name: "成交量",
-                        type: "bar",
-                        xAxisIndex: 1,
-                        yAxisIndex: 1,
-                        data: volData,
-                        // 用正負值簡單分漲跌柱
-                        itemStyle: {
-                            color: (params) => (volColor[params.dataIndex] >= 0 ? "#26a69a" : "#ef5350")
-                        },
-                        barMaxWidth: 12
+                        name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: volData,
+                        itemStyle: { color: (p) => volColor[p.dataIndex] > 0 ? '#ef4444' : '#22c55e' }
+                    },
+                    {
+                        name: '外資買賣超', type: 'bar', xAxisIndex: 2, yAxisIndex: 3, data: foreignNetData,
+                        itemStyle: { color: (p) => p.value >= 0 ? '#ef4444' : '#22c55e' }
+                    },
+                    {
+                        name: '外資佔股比%', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: shareData,
+                        symbol: 'none', lineStyle: { width: 2, color: '#3b82f6' }
                     }
                 ]
             };
 
-            chart.setOption(option);
-
-            // 讓容器變更大小時自動 resize（避免卡片寬度變化後圖不跟著）
-            const ro = new ResizeObserver(() => chart.resize());
-            ro.observe(chartDiv);
-        }
-
-        initDefaultDateRange();
-
-        function setRecentYears(years) {
-            const today = new Date();
-
-            const end = formatDateInput(today);
-
-            const startDate = addYearsSafe(today, -years);
-            const start = formatDateInput(startDate);
-
-            document.getElementById("inputStartDate").value = start;
-            document.getElementById("inputEndDate").value = end;
+            myChart.setOption(option);
+            const ro = new ResizeObserver(() => myChart.resize());
+            ro.observe(document.getElementById(containerId));
         }
 
         function initDefaultDateRange() {
             const today = new Date();
-
-            const end = formatDateInput(today);
-
-            const startDate = new Date(today);
-            startDate.setFullYear(today.getFullYear() - 1);
-
-            const start = formatDateInput(startDate);
-
-            document.getElementById("inputStartDate").value = start;
-            document.getElementById("inputEndDate").value = end;
+            const start = new Date();
+            start.setFullYear(today.getFullYear() - 1);
+            document.getElementById("inputEndDate").value = formatDateInput(today);
+            document.getElementById("inputStartDate").value = formatDateInput(start);
         }
 
         function formatDateInput(d) {
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, "0");
-            const dd = String(d.getDate()).padStart(2, "0");
-            return `${yyyy}-${mm}-${dd}`;
+            return d.toISOString().split('T')[0];
+        }
+
+        function setRecentYears(years) {
+            const today = new Date();
+            const start = addYearsSafe(today, -years);
+            document.getElementById("inputEndDate").value = formatDateInput(today);
+            document.getElementById("inputStartDate").value = formatDateInput(start);
         }
 
         function addYearsSafe(date, years) {
             const d = new Date(date);
             const m = d.getMonth();
             d.setFullYear(d.getFullYear() + years);
-
-            // 若月份改變，代表原本是 2/29，回到前一個月最後一天
-            if (d.getMonth() !== m) {
-                d.setDate(0);
-            }
+            if (d.getMonth() !== m) d.setDate(0);
             return d;
         }
 
+        // 修改後的單位格式化函數：自動去除冗餘的小數點 .0
+        function formatFlowValue(v) {
+            if (v === 0) return '0';
+            const absV = Math.abs(v);
+            let num, unit = '';
 
+            if (absV >= 1e12) { num = v / 1e12; unit = 'T'; }
+            else if (absV >= 1e9) { num = v / 1e9; unit = 'B'; }
+            else if (absV >= 1e6) { num = v / 1e6; unit = 'M'; }
+            else if (absV >= 1e3) { num = v / 1e3; unit = 'K'; }
+            else { num = v; unit = ''; }
+
+            // 關鍵點：Number(num.toFixed(1)) 會將 120.0 轉為 120，將 1.23 轉為 1.2
+            return Number(num.toFixed(1)) + unit;
+        }
+
+        function clearChartList() { document.getElementById("ChartList").innerHTML = ""; }
     </script>
-
 </body>
 
 </html>

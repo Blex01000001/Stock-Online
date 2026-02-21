@@ -48,7 +48,7 @@ namespace Stock_Online.Services.Adjustment
                     Note = p.Note,
                 });
             }
-            return newPrices;
+            return newPrices.OrderBy(x => x.TradeDate).ToList();
         }
     }
 }

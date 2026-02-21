@@ -126,15 +126,6 @@
         // 你原本是 7278，這裡沿用；需要的話自行改成 https / ngrok
         const apiBase = "http://localhost:7278";
 
-        /**
-         * 你後端回傳的資料格式我不知道你現在長什麼樣，
-         * 所以這裡支援兩種常見格式：
-         *
-         * A) data.result = [{ date, open, high, low, close, volume }, ...]
-         * B) data.result = [{ tradeDate, openPrice, highPrice, lowPrice, closePrice, volume }, ...]
-         *
-         * 你只要讓欄位對得上，就能畫出來。
-         */
         async function addKline() {
             const stockId = getStockId();
             if (!stockId) return;
