@@ -46,11 +46,6 @@ namespace Stock_Online.DataAccess.SQLite
             return affected;
         }
 
-        //public static object DbValue<TVal>(TVal? value) where TVal : struct
-        //    => value.HasValue ? value.Value : DBNull.Value;
-
-        //public static object DbValue(string? value)
-        //    => string.IsNullOrWhiteSpace(value) ? DBNull.Value : value!;
         public object DbValue<TVal>(TVal? value) where TVal : struct
             => value.HasValue ? value.Value : DBNull.Value;
 

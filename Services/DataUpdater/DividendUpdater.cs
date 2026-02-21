@@ -24,7 +24,7 @@ namespace Stock_Online.Services.DataUpdater
         {
             try
             {
-                await ReportProgressAsync($"{stockId} 股利更新中");
+                await ReportProgressAsync($"⏳ {stockId} {year} 股利更新中");
 
                 string url =
                     "https://api.finmindtrade.com/api/v4/data" +
@@ -35,7 +35,7 @@ namespace Stock_Online.Services.DataUpdater
                 var response = await ExecuteWithRetryAsync(
                     () => _http.GetFromJsonAsync<FinMindDividendResponse>(url)!,
                     onRetryFail: (retry, ex) =>
-                        ReportProgressAsync($"⚠ 股利重試失敗 {stockId} 第{retry}次：{ex.Message}")
+                        ReportProgressAsync($"⚠ 股利重試失敗 {stockId} {year} 第 {retry} 次：{ex.Message}")
                 );
 
                 if (response == null ||
@@ -43,7 +43,7 @@ namespace Stock_Online.Services.DataUpdater
                     response.data == null ||
                     response.data.Count == 0)
                 {
-                    await ReportProgressAsync($"⚠ 股利資料為空 {stockId}");
+                    await ReportProgressAsync($"⚠ {stockId} {year} 股利資料為空");
                     return; // ✅ 原本缺少這個，避免 response.data NRE
                 }
 
@@ -55,11 +55,11 @@ namespace Stock_Online.Services.DataUpdater
 
                 await  _repo.SaveDividendToDbAsync(models);
 
-                await ReportProgressAsync($"✅ 股利更新完成 {stockId}");
+                await ReportProgressAsync($"✅ {stockId} {year} 股利更新完成");
             }
             catch (Exception ex)
             {
-                await ReportProgressAsync($"❌ 股利更新失敗 {stockId}：{ex.Message}");
+                await ReportProgressAsync($"❌ {stockId} {year} 股利更新失敗：{ex.Message}");
             }
 
             // 禮貌 delay（FinMind rate limit）
