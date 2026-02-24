@@ -18,5 +18,6 @@ namespace Stock_Online.DTOs
         public List<KLineMarkLineDto> MarkLines { get; set; } = new();
         public List<StockShareholding> Shareholdings { get; set; } = new();
         public InstitutionalSeriesDto Institutional { get; set; } = new();
+        public MacdDto Macd { get; set; } = new();
     }
 }

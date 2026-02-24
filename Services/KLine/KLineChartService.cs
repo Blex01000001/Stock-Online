@@ -47,7 +47,6 @@ namespace Stock_Online.Services.KLine
                 .OrderBy(x => x.TradeDate)
                 .ToList();
 
-
             Query priceQueryAll = StockDailyPriceQueryBuilder.Build(stockId, null, "19110101", end);
             List<StockDailyPrice> pricesAll = (await _repo.GetPricesAsync(priceQueryAll))
                 .OrderBy(x => x.TradeDate)

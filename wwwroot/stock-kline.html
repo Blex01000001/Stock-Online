@@ -178,12 +178,13 @@
                     (dto.markers ?? dto.Markers),
                     (dto.markLines ?? dto.MarkLines),
                     (dto.shareholdings ?? dto.Shareholdings),
-                    (dto.institutional?.daily ?? dto.Institutional?.Daily)
+                    (dto.institutional?.daily ?? dto.Institutional?.Daily),
+                    (dto.macd ?? dto.Macd)
                 );
             });
         }
 
-        function renderChartCard(stockId, rows, maLines = [], markers = [], markLines = [], shareholdings = [], institutionalDaily = []) {
+        function renderChartCard(stockId, rows, maLines = [], markers = [], markLines = [], shareholdings = [], institutionalDaily = [], macd = {}) {
             const clean = rows.filter(p => p.date && Array.isArray(p.value));
             if (clean.length === 0) return;
 
@@ -210,6 +211,11 @@
             const kData = clean.map(p => p.value);
             const volData = clean.map(p => p.volume || 0);
             const volColor = clean.map(p => p.value[1] >= p.value[0] ? 1 : -1);
+            // --- MACD 資料處理 ---
+            //const macd = dto.macd || dto.Macd || {};
+            const difData = xData.map((d, i) => (macd.dif || macd.Dif || [])[i] ?? null);
+            const deaData = xData.map((d, i) => (macd.dea || macd.Dea || [])[i] ?? null);
+            const histData = xData.map((d, i) => (macd.hist || macd.Hist || [])[i] ?? null);
 
             // --- 外資持股與買賣超資料處理 ---
             const shareMap = new Map();
@@ -247,34 +253,10 @@
             // --- 套用 updated2.html 的 Option 佈局 ---
             const option = {
                 title: [
-                    {
-                        text: `成交量`,
-                        left: 62,
-                        top: 365,
-                        textStyle: {
-                            fontSize: 14,
-                            fontFamily: 'Inter, "Microsoft JhengHei", "PingFang SC", sans-serif'
-                        }
-                    },
-                    {
-                        text: `外資買賣超`,
-                        left: 63,
-                        top: 460,
-                        textStyle: {
-                            fontSize: 14,
-                            fontFamily: 'Inter, "Microsoft JhengHei", "PingFang SC", sans-serif'
-                        }
-                    },
-                    {
-                        text: `外資持股`,
-                        right: 60,
-                        top: 460,
-                        textStyle: {
-                            fontSize: 14,
-                            fontFamily: 'Inter, "Microsoft JhengHei", "PingFang SC", sans-serif'
-                        }
-                    }
-
+                    { text: `MACD`, left: 62, top: 310, textStyle: { fontSize: 14, fontFamily: 'Inter, "Microsoft JhengHei"' } },
+                    { text: `成交量`, left: 62, top: 405, textStyle: { fontSize: 14, fontFamily: 'Inter, "Microsoft JhengHei"' } },
+                    { text: `外資買賣超`, left: 63, top: 500, textStyle: { fontSize: 14, fontFamily: 'Inter, "Microsoft JhengHei"' } },
+                    { text: `外資持股%`, right: 60, top: 500, textStyle: { fontSize: 14, fontFamily: 'Inter, "Microsoft JhengHei"' } }
                 ],
                 tooltip: {
                     trigger: 'axis',
@@ -283,50 +265,31 @@
                     valueFormatter: (v) => (typeof v === 'number' && !v.toString().includes('.')) ? formatFlowValue(v) : v
                 },
                 legend: {
-                    top: 5, // 向上移動圖例
-                    data: ['K線', '成交量', '外資買賣超', '外資佔股比%', ...maSeries.map(m => m.name)]
+                    top: 5,
+                    data: ['K線', '成交量', '外資買賣超', '外資佔股比%', 'DIF', 'DEA', 'MACD', ...maSeries.map(m => m.name)]
                 },
                 grid: [
-                    { top: 40, left: 70, right: 60, height: 300 },  // K 線：Top 由 90 改為 40
-                    { left: 70, right: 60, top: 380, height: 80 },  // 成交量
-                    { left: 70, right: 60, top: 480, height: 100 }  // 外資區
+                    { top: 40, left: 70, right: 60, height: 250 },  // K 線
+                    { left: 70, right: 60, top: 330, height: 80 },  // MACD
+                    { left: 70, right: 60, top: 420, height: 80 },  // 成交量
+                    { left: 70, right: 60, top: 520, height: 80 }   // 外資區
                 ],
                 xAxis: [
                     { type: 'category', data: xData, boundaryGap: false, axisLine: { onZero: false }, splitLine: { show: false } },
                     { type: 'category', gridIndex: 1, data: xData, axisLabel: { show: false }, axisTick: { show: false } },
-                    { type: 'category', gridIndex: 2, data: xData, axisLabel: { show: false }, axisTick: { show: false } }
+                    { type: 'category', gridIndex: 2, data: xData, axisLabel: { show: false }, axisTick: { show: false } },
+                    { type: 'category', gridIndex: 3, data: xData, axisLabel: { show: false }, axisTick: { show: false } }
                 ],
                 yAxis: [
-                    { scale: true, splitLine: { lineStyle: { type: 'dashed', opacity: 0.6 } } }, // K線主圖
-                    {
-                        gridIndex: 1,
-                        scale: true,
-                        // 修改：開啟成交量分隔線，設定為淺色虛線
-                        splitLine: {
-                            show: true,
-                            lineStyle: { type: 'dashed', color: '#e2e8f0', opacity: 0.8 }
-                        },
-                        axisLabel: { formatter: (v) => formatFlowValue(v) }
-                    },
-                    {
-                        gridIndex: 2, scale: true, position: 'right',
-                        axisLabel: { formatter: '{value}%' }, splitLine: { show: false } // 佔比維持隱藏
-                    },
-                    {
-                        gridIndex: 2,
-                        scale: true,
-                        position: 'left',
-                        // 修改：開啟外資買賣超分隔線
-                        splitLine: {
-                            show: true,
-                            lineStyle: { type: 'dashed', color: '#e2e8f0', opacity: 0.8 }
-                        },
-                        axisLabel: { formatter: (v) => formatFlowValue(v) }
-                    }
+                    { scale: true, splitLine: { lineStyle: { type: 'dashed', opacity: 0.6 } } }, // K線
+                    { gridIndex: 1, scale: true, splitLine: { show: true, lineStyle: { type: 'dashed', opacity: 0.4 } } }, // MACD
+                    { gridIndex: 2, scale: true, splitLine: { show: true, lineStyle: { type: 'dashed', opacity: 0.4 } }, axisLabel: { formatter: (v) => formatFlowValue(v) } }, // 成交量
+                    { gridIndex: 3, scale: true, position: 'right', axisLabel: { formatter: '{value}%' }, splitLine: { show: false } }, // 外資佔比
+                    { gridIndex: 3, scale: true, position: 'left', splitLine: { show: true }, axisLabel: { formatter: (v) => formatFlowValue(v) } } // 外資買賣超
                 ],
                 dataZoom: [
-                    { type: 'inside', xAxisIndex: [0, 1, 2], start: 0, end: 100 },
-                    { type: 'slider', xAxisIndex: [0, 1, 2], top: 600, height: 20 }
+                    { type: 'inside', xAxisIndex: [0, 1, 2, 3], start: 0, end: 100 },
+                    { type: 'slider', xAxisIndex: [0, 1, 2, 3], top: 610, height: 20 }
                 ],
                 series: [
                     {
@@ -345,17 +308,31 @@
                         }
                     },
                     ...maSeries,
+                    // --- MACD Series ---
                     {
-                        name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: volData,
+                        name: 'DIF', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: difData,
+                        symbol: 'none', lineStyle: { width: 1, color: '#3b82f6' } // 藍色
+                    },
+                    {
+                        name: 'DEA', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: deaData,
+                        symbol: 'none', lineStyle: { width: 1, color: '#f59e0b' } // 橘色
+                    },
+                    {
+                        name: 'MACD', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: histData,
+                        itemStyle: { color: (p) => p.value >= 0 ? '#ef4444' : '#22c55e' } // 紅漲綠跌
+                    },
+                    // --- 成交量與外資 (Index 調整) ---
+                    {
+                        name: '成交量', type: 'bar', xAxisIndex: 2, yAxisIndex: 2, data: volData,
                         itemStyle: { color: (p) => volColor[p.dataIndex] > 0 ? '#ef4444' : '#22c55e' }
                     },
                     {
-                        name: '外資買賣超', type: 'bar', xAxisIndex: 2, yAxisIndex: 3, data: foreignNetData,
+                        name: '外資買賣超', type: 'bar', xAxisIndex: 3, yAxisIndex: 4, data: foreignNetData,
                         itemStyle: { color: (p) => p.value >= 0 ? '#ef4444' : '#22c55e' }
                     },
                     {
-                        name: '外資佔股比%', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: shareData,
-                        symbol: 'none', lineStyle: { width: 2, color: '#3b82f6' }
+                        name: '外資佔股比%', type: 'line', xAxisIndex: 3, yAxisIndex: 3, data: shareData,
+                        symbol: 'none', lineStyle: { width: 2, color: '#6366f1' }
                     }
                 ]
             };

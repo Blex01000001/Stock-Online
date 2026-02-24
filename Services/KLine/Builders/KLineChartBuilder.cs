@@ -18,11 +18,13 @@ namespace Stock_Online.Services.KLine.Builders
         private DateTime _date;
         private List<StockShareholding> _shareholdings;
         private InstitutionalSeriesDto _institutionalSeriesDto = new InstitutionalSeriesDto();
+        private MacdDto _fullMacd;
 
         public KLineChartBuilder(string stockId, IReadOnlyList<StockDailyPrice> prices, int currDayIndex, bool area = true)
         {
             _stockId = stockId;
-            
+            _fullMacd = Indicator.CalculateMacd(prices);
+
             if (area)
             {
                 // 以currDayIndex為中心，取前後50天
@@ -140,7 +142,13 @@ namespace Stock_Online.Services.KLine.Builders
                 Points = points,
                 MALines = maLines,
                 Shareholdings = _shareholdings,
-                Institutional = _institutionalSeriesDto
+                Institutional = _institutionalSeriesDto,
+                Macd = new MacdDto
+                {
+                    Dif = _fullMacd.Dif.Skip(_left).Take(_right - _left + 1).ToList(),
+                    Dea = _fullMacd.Dea.Skip(_left).Take(_right - _left + 1).ToList(),
+                    Hist = _fullMacd.Hist.Skip(_left).Take(_right - _left + 1).ToList()
+                }
             };
         }
 
