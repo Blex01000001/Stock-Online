@@ -9,6 +9,7 @@ namespace Stock_Online.Services.KLine.Builders
     {
         private readonly string _stockId;
         private readonly IReadOnlyList<StockDailyPrice> _prices;
+        private readonly IReadOnlyList<StockDailyPrice> _pricesOri;
         private readonly Dictionary<int, List<decimal?>> _maMap;
         private readonly int _index;
         private static readonly int[] MA_DAYS = { 5, 20, 60, 120, 240 };
@@ -21,7 +22,6 @@ namespace Stock_Online.Services.KLine.Builders
         public KLineChartBuilder(string stockId, IReadOnlyList<StockDailyPrice> prices, int currDayIndex, bool area = true)
         {
             _stockId = stockId;
-            _maMap = MovingAverageCalculator.Calculate(prices);
             
             if (area)
             {
@@ -35,15 +35,13 @@ namespace Stock_Online.Services.KLine.Builders
                 _right = prices.Count - 1;
                 Console.WriteLine($"left: {_left} right: {_right}");
             }
-
+            _pricesOri = prices;
             _prices = prices
                 .Skip(_left)
                 .Take(_right - _left + 1)
                 .ToList();
 
             _index = currDayIndex - _left;
-
-            
 
             _date = prices[currDayIndex].TradeDate;
         }
@@ -124,7 +122,7 @@ namespace Stock_Online.Services.KLine.Builders
 
             List<MALineDto> maLines = MA_DAYS.Select(period =>
             {
-                List<decimal?> fullMa = _maMap[period];
+                List<decimal?> fullMa = Indicator.CalculateSma(_pricesOri, period);
 
                 return new MALineDto
                 {
@@ -145,6 +143,7 @@ namespace Stock_Online.Services.KLine.Builders
                 Institutional = _institutionalSeriesDto
             };
         }
+
         public KLineChartBuilder SetHolding(List<StockShareholding> stockShareholdings)
         {
             if (stockShareholdings == null || stockShareholdings.Count == 0)

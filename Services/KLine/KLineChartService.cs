@@ -86,7 +86,12 @@ namespace Stock_Online.Services.KLine
                 .OrderBy(x => x.TradeDate)
                 .ToList();
 
-            Dictionary<int, List<decimal?>> maMap = MovingAverageCalculator.Calculate(prices);
+            //Dictionary<int, List<decimal?>> maMap = MovingAverageCalculator.Calculate(prices);
+            int[] MA_DAYS = { 5, 20, 60, 120, 240 };
+            var maMap = MA_DAYS.ToDictionary(
+                day => day,
+                day => Indicator.CalculateSma(prices, day)
+            );
 
             List<KLineChartDto> klines = new();
 
