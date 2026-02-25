@@ -1,7 +1,6 @@
 ﻿using Stock_Online.Domain.Entities;
 using Stock_Online.DTOs;
 using Stock_Online.Services.KLine.Indicators;
-using System.Diagnostics;
 
 namespace Stock_Online.Services.KLine.Builders
 {
@@ -9,7 +8,7 @@ namespace Stock_Online.Services.KLine.Builders
     {
         private readonly string _stockId;
         private readonly IReadOnlyList<StockDailyPrice> _prices;
-        private readonly IReadOnlyList<StockDailyPrice> _pricesOri;
+        private readonly IReadOnlyList<StockDailyPrice> _allOriginalPrices;
         private readonly Dictionary<int, List<decimal?>> _maMap;
         private readonly int _index;
         private static readonly int[] MA_DAYS = { 5, 20, 60, 120, 240 };
@@ -20,92 +19,20 @@ namespace Stock_Online.Services.KLine.Builders
         private InstitutionalSeriesDto _institutionalSeriesDto = new InstitutionalSeriesDto();
         private MacdDto _fullMacd;
 
-        public KLineChartBuilder(string stockId, IReadOnlyList<StockDailyPrice> prices, int currDayIndex, bool area = true)
+        public KLineChartBuilder(string stockId, IReadOnlyList<StockDailyPrice> prices, int currDayIndex)
         {
             _stockId = stockId;
             _fullMacd = Indicator.CalculateMacd(prices);
-
-            if (area)
-            {
-                // 以currDayIndex為中心，取前後50天
-                _left = Math.Max(0, currDayIndex - 50);
-                _right = Math.Min(prices.Count - 1, currDayIndex + 50);
-            }
-            else
-            {
-                _left = currDayIndex;
-                _right = prices.Count - 1;
-                Console.WriteLine($"left: {_left} right: {_right}");
-            }
-            _pricesOri = prices;
+            _left = currDayIndex;
+            _right = prices.Count - 1;
+            _allOriginalPrices = prices;
             _prices = prices
                 .Skip(_left)
                 .Take(_right - _left + 1)
                 .ToList();
 
             _index = currDayIndex - _left;
-
             _date = prices[currDayIndex].TradeDate;
-        }
-
-        public KLineChartDto Create()
-        {
-            var points = _prices.Select(x => new KLinePointDto
-            {
-                Date = x.TradeDate.ToString("yyyy-MM-dd"),
-                Value = new[]
-                {
-                    x.OpenPrice,
-                    x.ClosePrice,
-                    x.LowPrice,
-                    x.HighPrice
-                },
-                Volume = x.Volume
-            }).ToList();
-
-            //var closes = _prices.Select(x => x.ClosePrice).ToList();
-
-            var maLines = MA_DAYS.Select(period =>
-            {
-                var fullMa = _maMap[period];
-
-                return new MALineDto
-                {
-                    Name = $"MA{period}",
-                    Values = fullMa
-                        .Skip(_left)
-                        .Take(_prices.Count)
-                        .ToList()
-                };
-            }).ToList();
-
-            var markLines = new List<KLineMarkLineDto>();
-
-            int targetIndex = _index + 20;
-
-            if (targetIndex < _prices.Count)
-            {
-                //markLines.Add(new KLineMarkLineDto
-                //{
-                //    Date = _prices[targetIndex].TradeDate.ToString("yyyy-MM-dd"),
-                //    Type = "N+20",
-                //    Label = "N+20"
-                //});
-            }
-            return new KLineChartDto
-            {
-                StockId = _stockId,
-                Points = points,
-                MALines = maLines,
-                Markers = new List<KLineMarkerDto> { new KLineMarkerDto
-                {
-                    Date = _prices[_index].TradeDate.ToString("yyyy-MM-dd"),
-                    Type = "Selected",
-                    Label = "N"
-                }},
-                MarkLines = markLines
-            };
-
         }
         public KLineChartDto CreateSingle()
         {
@@ -124,7 +51,7 @@ namespace Stock_Online.Services.KLine.Builders
 
             List<MALineDto> maLines = MA_DAYS.Select(period =>
             {
-                List<decimal?> fullMa = Indicator.CalculateSma(_pricesOri, period);
+                List<decimal?> fullMa = Indicator.CalculateSma(_allOriginalPrices, period);
 
                 return new MALineDto
                 {
@@ -135,6 +62,8 @@ namespace Stock_Online.Services.KLine.Builders
                         .ToList()
                 };
             }).ToList();
+
+            var fullBB = Indicator.CalculateBollingerBands(_allOriginalPrices, 20, 2);
 
             return new KLineChartDto
             {
@@ -148,10 +77,15 @@ namespace Stock_Online.Services.KLine.Builders
                     Dif = _fullMacd.Dif.Skip(_left).Take(_right - _left + 1).ToList(),
                     Dea = _fullMacd.Dea.Skip(_left).Take(_right - _left + 1).ToList(),
                     Hist = _fullMacd.Hist.Skip(_left).Take(_right - _left + 1).ToList()
+                },
+                BollingerBands = new BollingerBandsDto
+                {
+                    Mid = fullBB.Mid.Skip(_left).Take(_right - _left + 1).ToList(),
+                    Upper = fullBB.Upper.Skip(_left).Take(_right - _left + 1).ToList(),
+                    Lower = fullBB.Lower.Skip(_left).Take(_right - _left + 1).ToList()
                 }
             };
         }
-
         public KLineChartBuilder SetHolding(List<StockShareholding> stockShareholdings)
         {
             if (stockShareholdings == null || stockShareholdings.Count == 0)

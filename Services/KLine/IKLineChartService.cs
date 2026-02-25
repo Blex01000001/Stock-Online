@@ -11,9 +11,5 @@ namespace Stock_Online.Services.KLine
             string? start,
             string? end
         );
-        Task<List<KLineChartDto>> GetKPatternLineAsync(
-            string stockId,
-            CandlePattern candlePattern
-        );
     }
 }

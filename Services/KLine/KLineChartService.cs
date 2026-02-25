@@ -1,13 +1,9 @@
 ﻿using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.DTOs;
 using Stock_Online.Services.KLine.Builders;
-using Stock_Online.Services.KLine.Indicators;
 using Stock_Online.Services.KLine.Queries;
-using Stock_Online.Services.KLine.Patterns;
 using SqlKata;
 using Stock_Online.Domain.Entities;
-using Stock_Online.Domain.Enums;
-using System.Collections.Generic;
 using Stock_Online.Services.Adjustment;
 
 namespace Stock_Online.Services.KLine
@@ -17,7 +13,6 @@ namespace Stock_Online.Services.KLine
         private readonly IStockRepository _repo;
         private readonly IPriceAdjustmentService _priceAdjService;
         private readonly IInstitutionalInvestorsAdjustmentService _insInvAdjService;
-
 
         public KLineChartService(IStockRepository repo,
             IPriceAdjustmentService priceAdjService,
@@ -41,7 +36,6 @@ namespace Stock_Online.Services.KLine
                 .OrderByDesc("ExDate");
             List<StockCorporateAction> actions = await _repo.GetCorporateActionsAsync(actionQuery);
 
-
             Query priceQuery = StockDailyPriceQueryBuilder.Build(stockId, null, start, end);
             List<StockDailyPrice> prices = (await _repo.GetPricesAsync(priceQuery))
                 .OrderBy(x => x.TradeDate)
@@ -52,7 +46,6 @@ namespace Stock_Online.Services.KLine
                 .OrderBy(x => x.TradeDate)
                 .ToList();
             var adjPricesAll = _priceAdjService.AdjustPrices(pricesAll, actions);
-
 
             var allPriceDic = adjPricesAll.ToDictionary(k => k.TradeDate, v => v);
             int index = adjPricesAll.ToList().IndexOf(allPriceDic[prices[0].TradeDate]);
@@ -68,42 +61,11 @@ namespace Stock_Online.Services.KLine
                 .ToList();
             var adjInsInvBuySells = _insInvAdjService.AdjustBuySell(insInvBuySells, actions);
 
-
-
-            return new List<KLineChartDto> { new KLineChartBuilder(stockId, adjPricesAll, index, false)
+            return new List<KLineChartDto> { new KLineChartBuilder(stockId, adjPricesAll, index)
                 .SetHolding(StockShareholdings)
                 .SetInstitutional(adjInsInvBuySells.ToList())
                 .CreateSingle()
             };
-        }
-        public async Task<List<KLineChartDto>> GetKPatternLineAsync(string stockId, CandlePattern candlePattern)
-        {
-            Console.WriteLine($"Get K Line: {stockId}");
-            Query query = StockDailyPriceQueryBuilder.Build(stockId, null, "20200101", "20261231");
-
-            List<StockDailyPrice> prices = (await _repo.GetPricesAsync(query))
-                .OrderBy(x => x.TradeDate)
-                .ToList();
-
-            //Dictionary<int, List<decimal?>> maMap = MovingAverageCalculator.Calculate(prices);
-            int[] MA_DAYS = { 5, 20, 60, 120, 240 };
-            var maMap = MA_DAYS.ToDictionary(
-                day => day,
-                day => Indicator.CalculateSma(prices, day)
-            );
-
-            List<KLineChartDto> klines = new();
-
-            for (int n = 0; n < prices.Count; n++)
-            {
-                var detector = new CandlePatternDetector(prices, n, maMap)
-                    .IsMatch(candlePattern);
-                if (!detector) continue;
-
-                //只在「確定命中」後才切 specPrices（給前端）
-                klines.Add(new KLineChartBuilder(stockId,prices,n).Create());
-            }
-            return klines;
         }
     }
 }

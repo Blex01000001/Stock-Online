@@ -19,5 +19,6 @@ namespace Stock_Online.DTOs
         public List<StockShareholding> Shareholdings { get; set; } = new();
         public InstitutionalSeriesDto Institutional { get; set; } = new();
         public MacdDto Macd { get; set; } = new();
+        public BollingerBandsDto BollingerBands { get; set; } = new();
     }
 }

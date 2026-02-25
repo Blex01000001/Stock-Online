@@ -171,6 +171,7 @@
             if (!Array.isArray(list) || list.length === 0) return alert("查設無資料");
             list.forEach(dto => {
                 // 整合傳入 institutionalDaily 參數
+
                 renderChartCard(
                     (dto.stockId ?? dto.StockId),
                     (dto.points ?? dto.Points),
@@ -179,12 +180,13 @@
                     (dto.markLines ?? dto.MarkLines),
                     (dto.shareholdings ?? dto.Shareholdings),
                     (dto.institutional?.daily ?? dto.Institutional?.Daily),
-                    (dto.macd ?? dto.Macd)
+                    (dto.macd ?? dto.Macd),
+                    (dto.bollingerBands ?? dto.BollingerBands)
                 );
             });
         }
 
-        function renderChartCard(stockId, rows, maLines = [], markers = [], markLines = [], shareholdings = [], institutionalDaily = [], macd = {}) {
+        function renderChartCard(stockId, rows, maLines = [], markers = [], markLines = [], shareholdings = [], institutionalDaily = [], macd = {}, bollingerBands = {}) {
             const clean = rows.filter(p => p.date && Array.isArray(p.value));
             if (clean.length === 0) return;
 
@@ -212,10 +214,20 @@
             const volData = clean.map(p => p.volume || 0);
             const volColor = clean.map(p => p.value[1] >= p.value[0] ? 1 : -1);
             // --- MACD 資料處理 ---
-            //const macd = dto.macd || dto.Macd || {};
             const difData = xData.map((d, i) => (macd.dif || macd.Dif || [])[i] ?? null);
             const deaData = xData.map((d, i) => (macd.dea || macd.Dea || [])[i] ?? null);
             const histData = xData.map((d, i) => (macd.hist || macd.Hist || [])[i] ?? null);
+            // --- Bollinger Bands 資料處理 ---
+            const bbUpper = xData.map((_, i) => (bollingerBands.upper || bollingerBands.Upper || [])[i] ?? null);
+            const bbLower = xData.map((_, i) => (bollingerBands.lower || bollingerBands.Lower || [])[i] ?? null);
+
+            // 計算差值用於堆疊填色 (Upper - Lower)
+            const bbDiff = bbUpper.map((up, i) => {
+                const low = bbLower[i];
+                return (up !== null && low !== null) ? up - low : null;
+            });
+
+            console.log(bollingerBands);
 
             // --- 外資持股與買賣超資料處理 ---
             const shareMap = new Map();
@@ -292,6 +304,29 @@
                     { type: 'slider', xAxisIndex: [0, 1, 2, 3], top: 610, height: 20 }
                 ],
                 series: [
+                    // 1. 布林下軌：設為透明且不顯示線條
+                    {
+                        name: 'BB_Base',
+                        type: 'line',
+                        data: bbLower,
+                        lineStyle: { opacity: 0 },
+                        stack: 'Bollinger',
+                        symbol: 'none',
+                        silent: true // 不觸發滑鼠事件
+                    },
+                    // 2. 布林範圍：堆疊在下軌之上並上色
+                    {
+                        name: '布林通道',
+                        type: 'line',
+                        data: bbDiff,
+                        stack: 'Bollinger',
+                        symbol: 'none',
+                        lineStyle: { opacity: 0 },
+                        areaStyle: {
+                            color: 'rgba(130, 130, 130, 0.3)'
+                        },
+                        silent: true
+                    },
                     {
                         name: 'K線', type: 'candlestick', data: kData,
                         itemStyle: { color: '#ef4444', color0: '#22c55e', borderColor: '#ef4444', borderColor0: '#22c55e' },

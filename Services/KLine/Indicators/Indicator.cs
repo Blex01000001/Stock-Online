@@ -174,6 +174,125 @@ namespace Stock_Online.Services.KLine.Indicators
         }
 
         /// <summary>
+        /// 計算相對強弱指標 (Relative Strength Index, RSI)
+        /// 公式：100 - (100 / (1 + RS)), 其中 RS = (n日內平均漲幅 / n日內平均跌幅)
+        /// </summary>
+        public static List<decimal?> CalculateRsi(IReadOnlyList<StockDailyPrice> prices, int period)
+        {
+            var closes = prices.Select(x => x.ClosePrice).ToList();
+            var result = new List<decimal?>();
+
+            if (closes.Count <= period) return result;
+
+            // 計算漲跌幅
+            var changes = new List<decimal>();
+            for (int i = 1; i < closes.Count; i++)
+            {
+                changes.Add(closes[i] - closes[i - 1]);
+            }
+
+            for (int i = 0; i < closes.Count; i++)
+            {
+                // RSI 需要足夠的樣本天數 (至少要有 period 天的漲跌資料)
+                if (i < period)
+                {
+                    result.Add(null);
+                    continue;
+                }
+
+                // 取過去 period 天的漲跌資料
+                var periodChanges = changes.Skip(i - period).Take(period).ToList();
+
+                decimal avgGain = periodChanges.Where(c => c > 0).DefaultIfEmpty(0).Sum() / period;
+                decimal avgLoss = Math.Abs(periodChanges.Where(c => c < 0).DefaultIfEmpty(0).Sum()) / period;
+
+                if (avgLoss == 0)
+                {
+                    result.Add(100); // 如果都沒有跌，RSI 為 100
+                    continue;
+                }
+
+                decimal rs = avgGain / avgLoss;
+                decimal rsi = 100 - (100 / (1 + rs));
+
+                result.Add(Math.Round(rsi, 2));
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 計算標準差 (Standard Deviation)
+        /// 用於布林通道：中軌 (SMA) +/- (2 * 標準差)
+        /// </summary>
+        public static List<decimal?> CalculateStandardDeviation(IReadOnlyList<StockDailyPrice> prices, int period)
+        {
+            var closes = prices.Select(x => x.ClosePrice).ToList();
+            var result = new List<decimal?>();
+
+            for (int i = 0; i < closes.Count; i++)
+            {
+                if (i + 1 < period)
+                {
+                    result.Add(null);
+                    continue;
+                }
+
+                // 1. 取得當前週期的收盤價片段
+                var segment = closes.Skip(i - period + 1).Take(period).ToList();
+
+                // 2. 計算平均值 (Mean)
+                decimal average = segment.Average();
+
+                // 3. 計算平方差總和 (Sum of Squares)
+                double sumOfSquares = segment.Select(val => Math.Pow((double)(val - average), 2)).Sum();
+
+                // 4. 計算標準差 (變異數的平方根)
+                decimal stdDev = (decimal)Math.Sqrt(sumOfSquares / period);
+
+                result.Add(Math.Round(stdDev, 2));
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 計算布林通道 (Bollinger Bands)
+        /// </summary>
+        /// <param name="prices">原始股價資料</param>
+        /// <param name="period">週期，預設為 20</param>
+        /// <param name="multiplier">倍數，預設為 2</param>
+        public static BollingerBandsDto CalculateBollingerBands(IReadOnlyList<StockDailyPrice> prices, int period = 20, int multiplier = 2)
+        {
+            // 1. 中軌就是簡單移動平均線 (SMA)
+            var mid = CalculateSma(prices, period);
+
+            // 2. 計算標準差
+            var stdDev = CalculateStandardDeviation(prices, period);
+
+            var result = new BollingerBandsDto { Mid = mid };
+
+            for (int i = 0; i < prices.Count; i++)
+            {
+                if (mid[i] == null || stdDev[i] == null)
+                {
+                    result.Upper.Add(null);
+                    result.Lower.Add(null);
+                    continue;
+                }
+
+                // 3. 上軌 = 中軌 + (倍數 * 標準差)
+                decimal upper = mid[i].Value + (stdDev[i].Value * multiplier);
+                // 4. 下軌 = 中軌 - (倍數 * 標準差)
+                decimal lower = mid[i].Value - (stdDev[i].Value * multiplier);
+
+                result.Upper.Add(Math.Round(upper, 2));
+                result.Lower.Add(Math.Round(lower, 2));
+            }
+
+            return result;
+        }
+
+
+        /// <summary>
         /// 專門給 DIF 這種已經是數列的資料計算 EMA 用
         /// </summary>
         private static List<decimal?> CalculateEmaForList(List<decimal?> values, int period)
