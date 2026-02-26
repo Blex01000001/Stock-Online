@@ -23,12 +23,7 @@ namespace Stock_Online.Services.KLine
             this._insInvAdjService = insInvAdjService;
         }
 
-        public async Task<List<KLineChartDto>> GetKLineAsync(
-            string stockId,
-            int? days,
-            string? start,
-            string? end
-        )
+        public async Task<List<KLineChartDto>> GetKLineAsync(string stockId, int? days, string? start, string? end)
         {
             var actionQuery = new Query("StockCorporateAction")
                 .Select("StockId", "ActionType", "ExDate", "Ratio", "CashAmount", "Description")
@@ -41,11 +36,15 @@ namespace Stock_Online.Services.KLine
                 .OrderBy(x => x.TradeDate)
                 .ToList();
 
-            Query priceQueryAll = StockDailyPriceQueryBuilder.Build(stockId, null, "19110101", end);
-            List<StockDailyPrice> pricesAll = (await _repo.GetPricesAsync(priceQueryAll))
+            // 僅抓取必要長度：目標起始日往前推 240 天(最大 MA) 即可滿足多數指標計算
+            DateTime startDate = DateTime.TryParse(start, out var s) ? s : DateTime.Now.AddYears(-1);
+            string effectiveStart = startDate.AddDays(-365).ToString("yyyyMMdd");
+
+            Query priceQueryRequired = StockDailyPriceQueryBuilder.Build(stockId, null, effectiveStart, end);
+            var pricesRequired = (await _repo.GetPricesAsync(priceQueryRequired))
                 .OrderBy(x => x.TradeDate)
                 .ToList();
-            var adjPricesAll = _priceAdjService.AdjustPrices(pricesAll, actions);
+            var adjPricesAll = _priceAdjService.AdjustPrices(pricesRequired, actions);
 
             var allPriceDic = adjPricesAll.ToDictionary(k => k.TradeDate, v => v);
             int index = adjPricesAll.ToList().IndexOf(allPriceDic[prices[0].TradeDate]);
@@ -59,12 +58,16 @@ namespace Stock_Online.Services.KLine
             List<StockInstitutionalInvestorsBuySell> insInvBuySells = (await _repo.GetInstitutionalInvestorsBuySellAsync(InstitutionalQuery))
                 .OrderBy(x => x.Date)
                 .ToList();
-            var adjInsInvBuySells = _insInvAdjService.AdjustBuySell(insInvBuySells, actions);
+            var adjInsInvBuySells = _insInvAdjService.AdjustBuySell(insInvBuySells, actions).ToList();
 
-            return new List<KLineChartDto> { new KLineChartBuilder(stockId, adjPricesAll, index)
-                .SetHolding(StockShareholdings)
-                .SetInstitutional(adjInsInvBuySells.ToList())
-                .CreateSingle()
+            return new List<KLineChartDto> { 
+                new KLineChartBuilder(stockId, adjPricesAll, index)
+                    .SetMaLine()
+                    .SetBollingerBand()
+                    .SetForeignInvestmentHolding(StockShareholdings)
+                    .SetInstitutional(adjInsInvBuySells)
+                    .SetMacd()
+                    .Build()
             };
         }
     }
