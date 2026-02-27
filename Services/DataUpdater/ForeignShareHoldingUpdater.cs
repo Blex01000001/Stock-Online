@@ -8,16 +8,16 @@ using System.Text.Json;
 
 namespace Stock_Online.Services.DataUpdater
 {
-    public class ShareHoldingUpdater : BaseDataUpdater
+    public class ForeignShareHoldingUpdater : BaseDataUpdater
     {
-        public override DataType DataType => DataType.ShareHoldingUpdater;
+        public override DataType DataType => DataType.ForeignShareHoldingUpdater;
 
         private static readonly JsonSerializerOptions JsonOpt = new()
         {
             PropertyNameCaseInsensitive = true
         };
 
-        public ShareHoldingUpdater(
+        public ForeignShareHoldingUpdater(
             IStockRepository repo,
             IHubContext<StockUpdateHub> hub,
             HttpClient http)

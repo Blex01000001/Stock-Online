@@ -67,6 +67,7 @@ namespace Stock_Online.Services.KLine
                     .SetForeignInvestmentHolding(StockShareholdings)
                     .SetInstitutional(adjInsInvBuySells)
                     .SetMacd()
+                    .SetRsi()
                     .Build()
             };
         }

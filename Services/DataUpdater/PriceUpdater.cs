@@ -62,7 +62,6 @@ namespace Stock_Online.Services.DataUpdater
                     $"?response=json&date={date}&stockNo={stockId}";
 
                 var response = await _http.GetFromJsonAsync<TwseStockDayResponse>(url);
-
                 if (response == null || response.stat != "OK")
                     continue;
 
@@ -89,7 +88,6 @@ namespace Stock_Online.Services.DataUpdater
                 if (!TryParseLong(row[1], out var volume)) return null;
                 if (!TryParseLong(row[2], out var amount)) return null;
                 if (!TryParseInt(row[8], out var count)) return null;
-
                 return new StockDailyPrice
                 {
                     StockId = stockId,
@@ -110,19 +108,25 @@ namespace Stock_Online.Services.DataUpdater
                 return null;
             }
         }
-
         private static bool TryParseDecimal(string input, out decimal value)
         {
             input = input.Trim();
 
-            if (string.IsNullOrWhiteSpace(input) ||
-                input == "--" ||
-                input.StartsWith("X", StringComparison.OrdinalIgnoreCase))
+            // 1. 處理空值或特殊符號 "--" (維持回傳 false)
+            if (string.IsNullOrWhiteSpace(input) || input == "--")
             {
                 value = 0;
                 return false;
             }
 
+            // 2. 處理以 "X" 開頭的情況 (修改為回傳 true)
+            if (input.StartsWith("X", StringComparison.OrdinalIgnoreCase))
+            {
+                value = 0;
+                return true; // 這裡改成 true，代表這是一個「合法的 0」
+            }
+
+            // 3. 一般數字解析
             return decimal.TryParse(input, out value);
         }
 

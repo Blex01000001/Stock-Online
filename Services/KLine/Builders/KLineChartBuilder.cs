@@ -18,6 +18,7 @@ namespace Stock_Online.Services.KLine.Builders
         private BollingerBandsDto _bollingerBands;
         private List<KLinePointDto> _points;
         private List<MALineDto> _maLines;
+        private RsiDto _rsi;
 
         public KLineChartBuilder(string stockId, IReadOnlyList<StockDailyPrice> prices, int startIndex)
         {
@@ -44,7 +45,8 @@ namespace Stock_Online.Services.KLine.Builders
                 Shareholdings = _shareholdings,
                 Institutional = _institutionalSeriesDto,
                 Macd = _macd,
-                BollingerBands = _bollingerBands
+                BollingerBands = _bollingerBands,
+                Rsi = _rsi
             };
         }
         private void SetPoints()
@@ -61,6 +63,20 @@ namespace Stock_Online.Services.KLine.Builders
                 },
                 Volume = x.Volume
             }).ToList();
+        }
+        public KLineChartBuilder SetRsi(int period = 14)
+        {
+            var Rsi66 = Indicator.CalculateRsi(_allOriginalPrices, 6).Skip(_left).Take(_right - _left + 1);
+            var Rsi1212 = Indicator.CalculateRsi(_allOriginalPrices, 6).Skip(_left).Take(_right - _left + 1);
+            var Rsi2424 = Indicator.CalculateRsi(_allOriginalPrices, 6).Skip(_left).Take(_right - _left + 1);
+
+            _rsi = new RsiDto()
+            {
+                Rsi6 = Indicator.CalculateRsi(_allOriginalPrices, 6).Skip(_left).Take(_right - _left + 1).ToList(),
+                Rsi12 = Indicator.CalculateRsi(_allOriginalPrices, 12).Skip(_left).Take(_right - _left + 1).ToList(),
+                Rsi24 = Indicator.CalculateRsi(_allOriginalPrices, 24).Skip(_left).Take(_right - _left + 1).ToList()
+            };
+            return this;
         }
         public KLineChartBuilder SetMacd(int fastPeriod = 12, int slowPeriod = 26, int signalPeriod = 9)
         {
@@ -124,17 +140,16 @@ namespace Stock_Online.Services.KLine.Builders
             }
 
             int index = stockShareholdings.IndexOf(matched);
+
+            // 因外資持股的資料會包含沒有交易的天數，所以資料天數會比price還要多
+            //_shareholdings = stockShareholdings.Skip(index).Take(_right - _left + 1).ToList();
             _shareholdings = stockShareholdings.Skip(index).ToList();
 
             return this;
         }
         public KLineChartBuilder SetInstitutional(List<StockInstitutionalInvestorsBuySell> institutionalInvestorsBuySell)
         {
-            if (institutionalInvestorsBuySell == null || institutionalInvestorsBuySell.Count == 0)
-            {
-                return this;
-            }
-
+            if (institutionalInvestorsBuySell == null || institutionalInvestorsBuySell.Count == 0) return this;
             string targetDate = _date.ToString("yyyy-MM-dd");
 
             var matched = institutionalInvestorsBuySell
@@ -142,15 +157,12 @@ namespace Stock_Online.Services.KLine.Builders
                 .OrderByDescending(x => x.Date)
                 .FirstOrDefault();
 
-            int index = institutionalInvestorsBuySell.IndexOf(matched);
+            int index = institutionalInvestorsBuySell.IndexOf(matched) / 5;
 
             _institutionalSeriesDto.Daily = institutionalInvestorsBuySell
                 .GroupBy(x => x.Date)
-                .OrderBy(g => g.Key)
                 .Select(g =>
                 {
-                    //long GetNet(string name) =>
-                    //    g.Where(x => x.Name == name).Sum(x => x.Buy - x.Sell);
                     var lookup = g.ToLookup(x => x.Name);
                     long GetNet(string name) => lookup[name].Sum(x => x.Buy - x.Sell);
 
@@ -174,6 +186,7 @@ namespace Stock_Online.Services.KLine.Builders
                         InvestmentTrustNet = investTrust
                     };
                 })
+                .Skip(index).Take(_right - _left + 1)
                 .ToList();
 
             return this;

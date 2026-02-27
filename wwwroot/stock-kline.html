@@ -180,22 +180,27 @@
                     (dto.shareholdings ?? dto.Shareholdings),
                     (dto.institutional?.daily ?? dto.Institutional?.Daily),
                     (dto.macd ?? dto.Macd),
-                    (dto.bollingerBands ?? dto.BollingerBands)
+                    (dto.bollingerBands ?? dto.BollingerBands),
+                    (dto.rsi ?? dto.Rsi)
                 );
             });
         }
 
-        function renderChartCard(stockId, rows, maLines = [], markers = [], markLines = [], shareholdings = [], institutionalDaily = [], macd = {}, bollingerBands = {}) {
+        function renderChartCard(stockId, rows, maLines = [], markers = [], markLines = [], shareholdings = [], institutionalDaily = [], macd = {}, bollingerBands = {}, rsi = {}) {
             const clean = rows.filter(p => p.date && Array.isArray(p.value));
             if (clean.length === 0) return;
 
             // 判斷哪些副圖指標有資料
             const hasMacd = (macd.dif || macd.Dif || []).length > 0;
             const hasVol = clean.some(p => p.volume > 0);
+
             const hasForeign = (shareholdings && shareholdings.length > 0) || (institutionalDaily && institutionalDaily.length > 0);
+            // 增加安全選取器，防止 rsi 物件為空
+            const rsiData6 = (rsi && (rsi.rsi6 || rsi.Rsi6)) ? (rsi.rsi6 || rsi.Rsi6) : [];
+            const hasRsi = rsiData6.length > 0;
 
             // 計算高度：基礎 250 + (副圖數量 * 80) + 底部 dataZoom/padding 約 100
-            const extraGrids = [hasMacd, hasVol, hasForeign].filter(Boolean).length;
+            const extraGrids = [hasMacd, hasVol, hasForeign, hasRsi].filter(Boolean).length;
             const totalHeight = 250 + (extraGrids * 80) + 100;
 
             const cardId = "card-" + Math.random().toString(36).substr(2, 9);
@@ -227,7 +232,11 @@
             const difData = xData.map((d, i) => (macd.dif || macd.Dif || [])[i] ?? null);
             const deaData = xData.map((d, i) => (macd.dea || macd.Dea || [])[i] ?? null);
             const histData = xData.map((d, i) => (macd.hist || macd.Hist || [])[i] ?? null);
-            // --- Bollinger Bands 資料處理 ---
+            // --- RSI 資料處理 ---
+            const r6 = xData.map((_, i) => (rsi.rsi6 || rsi.Rsi6 || [])[i] ?? null);
+            const r12 = xData.map((_, i) => (rsi.rsi12 || rsi.Rsi12 || [])[i] ?? null);
+            const r24 = xData.map((_, i) => (rsi.rsi24 || rsi.Rsi24 || [])[i] ?? null);
+            // --- Bollinger Bands 資料處理 ---            
             const bbUpper = xData.map((_, i) => (bollingerBands.upper || bollingerBands.Upper || [])[i] ?? null);
             const bbLower = xData.map((_, i) => (bollingerBands.lower || bollingerBands.Lower || [])[i] ?? null);
 
@@ -304,41 +313,90 @@
                 );
             }
             series.push({
-                name: 'K線', type: 'candlestick', data: kData,
+                name: 'K線', type: 'candlestick', data: kData, barCategoryGap: '0%',
                 itemStyle: { color: '#ef4444', color0: '#22c55e', borderColor: '#ef4444', borderColor0: '#22c55e' },
                 markPoint: { symbol: "pin", symbolSize: [40, 40], label: { show: true, color: '#000', fontSize: 12, position: 'inside' }, data: markPoints },
                 markLine: { symbol: ['none', 'arrow'], symbolSize: [6, 10], lineStyle: { color: '#e53935', width: 2 }, label: { show: true, position: 'start', backgroundColor: '#fff', padding: [2, 4] }, data: lineData }
             }, ...maSeries);
 
-            // MACD 動態加入
-            if (hasMacd) {
-                titles.push({ text: `MACD`, left: 62, top: currentTop - 20, textStyle: { fontSize: 14, fontFamily: 'Inter, "Microsoft JhengHei"' } });
+            // 成交量動態加入
+            if (hasVol) {
+                titles.push({ text: '成交量', left: 62, top: currentTop - 20, textStyle: { fontSize: 14, fontFamily: 'Inter, "Microsoft JhengHei"' } });
                 grids.push({ left: 70, right: 60, top: currentTop, height: 80 });
+                // 修正：必須推入對應的 X 軸
                 xAxes.push({
                     type: 'category', gridIndex: gridIdx, data: xData, axisLabel: { show: false }, axisTick: { show: false },
-                    // 副圖開啟垂直指示線，但關閉標籤避免視覺雜亂
                     axisPointer: { show: true, type: 'line', label: { show: false } }
                 });
-                yAxes.push({ gridIndex: gridIdx, scale: true, splitLine: { show: true, lineStyle: { type: 'dashed', opacity: 0.4 } } });
+                yAxes.push({
+                    type: 'value', gridIndex: gridIdx, splitLine: { show: false }, axisLabel: { formatter: (v) => formatFlowValue(v) }
+                });
+                series.push({ name: '成交量', type: 'bar', xAxisIndex: gridIdx, yAxisIndex: gridIdx, data: volData, barCategoryGap: '0%', itemStyle: { color: (p) => volColor[p.dataIndex] > 0 ? '#ef4444' : '#22c55e' } });
+                currentTop += 100; gridIdx++;
+            }
+            // MACD 動態加入
+            if (hasMacd) {
+                titles.push({ text: 'MACD', left: 62, top: currentTop - 20, textStyle: { fontSize: 14, fontFamily: 'Inter, "Microsoft JhengHei"' } });
+                grids.push({ left: 70, right: 60, top: currentTop, height: 80 });
+                // 修正：必須推入對應的 X 軸
+                xAxes.push({
+                    type: 'category', gridIndex: gridIdx, data: xData, axisLabel: { show: false }, axisTick: { show: false },
+                    axisPointer: { show: true, type: 'line', label: { show: false } }
+                });
+                yAxes.push({
+                    type: 'value', gridIndex: gridIdx, splitLine: { show: true, lineStyle: { type: 'dashed', opacity: 0.4 } }
+                });
                 series.push(
                     { name: 'DIF', type: 'line', xAxisIndex: gridIdx, yAxisIndex: gridIdx, data: difData, symbol: 'none', lineStyle: { width: 1, color: '#3b82f6' } },
                     { name: 'DEA', type: 'line', xAxisIndex: gridIdx, yAxisIndex: gridIdx, data: deaData, symbol: 'none', lineStyle: { width: 1, color: '#f59e0b' } },
-                    { name: 'MACD', type: 'bar', xAxisIndex: gridIdx, yAxisIndex: gridIdx, data: histData, itemStyle: { color: (p) => p.value >= 0 ? '#ef4444' : '#22c55e' } }
+                    { name: 'MACD', type: 'bar', xAxisIndex: gridIdx, yAxisIndex: gridIdx, data: histData, barCategoryGap: '0%', itemStyle: { color: (p) => p.value >= 0 ? '#ef4444' : '#22c55e' } }
                 );
                 currentTop += 90; gridIdx++;
             }
 
-            // 成交量動態加入
-            if (hasVol) {
-                titles.push({ text: `成交量`, left: 62, top: currentTop - 15, textStyle: { fontSize: 14, fontFamily: 'Inter, "Microsoft JhengHei"' } });
+            // RSI 動態加入
+            if (hasRsi) {
+                titles.push({ text: `RSI (6,12,24)`, left: 62, top: currentTop - 20, textStyle: { fontSize: 14, fontFamily: 'Inter, "Microsoft JhengHei"' } });
                 grids.push({ left: 70, right: 60, top: currentTop, height: 80 });
                 xAxes.push({
                     type: 'category', gridIndex: gridIdx, data: xData, axisLabel: { show: false }, axisTick: { show: false },
+                    axisLine: { show: false }, // 隱藏 RSI 圖形的 X 軸底部橫線
                     axisPointer: { show: true, type: 'line', label: { show: false } }
                 });
-                yAxes.push({ gridIndex: gridIdx, scale: true, splitLine: { show: true, lineStyle: { type: 'dashed', opacity: 0.4 } }, axisLabel: { formatter: (v) => formatFlowValue(v) } });
-                series.push({ name: '成交量', type: 'bar', xAxisIndex: gridIdx, yAxisIndex: gridIdx, data: volData, itemStyle: { color: (p) => volColor[p.dataIndex] > 0 ? '#ef4444' : '#22c55e' } });
-                currentTop += 100; gridIdx++;
+                yAxes.push({
+                    type: 'value',
+                    gridIndex: gridIdx, min: 0, max: 100,
+                    axisLabel: { show: false }, // 隱藏左側標籤，由 markLine 的標籤取代
+                    axisTick: { show: false },
+                    splitLine: { show: false }  // 隱藏預設的網格線，改用 markLine
+                });
+
+                const rsiGridIdx = gridIdx;
+                series.push(
+                    {
+                        name: 'RSI6', type: 'line', xAxisIndex: rsiGridIdx, yAxisIndex: rsiGridIdx, data: r6, symbol: 'none',
+                        lineStyle: { width: 1, color: '#f43f5e' },
+                        markLine: {
+                            symbol: 'none', // 不顯示箭頭
+                            silent: true,   // 滑鼠指上去不觸發事件
+                            data: [
+                                {
+                                    yAxis: 30,
+                                    lineStyle: { color: '#94a3b8', type: 'line', width: 1, opacity: 0.8 },
+                                    label: { show: true, position: 'start', formatter: '30', fontSize: 14, color: '#000' }
+                                },
+                                {
+                                    yAxis: 70,
+                                    lineStyle: { color: '#94a3b8', type: 'line', width: 1, opacity: 0.8 },
+                                    label: { show: true, position: 'start', formatter: '70', fontSize: 14, color: '#000' }
+                                }
+                            ]
+                        }
+                    },
+                    { name: 'RSI12', type: 'line', xAxisIndex: rsiGridIdx, yAxisIndex: rsiGridIdx, data: r12, symbol: 'none', lineStyle: { width: 1, color: '#8b5cf6' } },
+                    { name: 'RSI24', type: 'line', xAxisIndex: rsiGridIdx, yAxisIndex: rsiGridIdx, data: r24, symbol: 'none', lineStyle: { width: 1, color: '#10b981' } }
+                );
+                currentTop += 90; gridIdx++;
             }
 
             // 外資動態加入
@@ -349,19 +407,24 @@
                 xAxes.push({
                     type: 'category', gridIndex: gridIdx, data: xData, axisLabel: { show: false }, axisTick: { show: false },
                     axisPointer: { show: true, type: 'line', label: { show: false } }
+                }, {
+                    type: 'category', gridIndex: gridIdx, data: xData, axisLabel: { show: false }, axisTick: { show: false },
+                    axisPointer: { show: true, type: 'line', label: { show: false } }
                 });
                 yAxes.push(
-                    { gridIndex: gridIdx, scale: true, position: 'right', axisLabel: { formatter: '{value}%' }, splitLine: { show: false } },
-                    { gridIndex: gridIdx, scale: true, position: 'left', splitLine: { show: true }, axisLabel: { formatter: (v) => formatFlowValue(v) } }
+                    { type: 'value', gridIndex: gridIdx, scale: true, position: 'right', axisLabel: { formatter: '{value}%' }, splitLine: { show: false } },
+                    { type: 'value', gridIndex: gridIdx, scale: true, position: 'left', splitLine: { show: true }, axisLabel: { formatter: (v) => formatFlowValue(v) } }
                 );
                 series.push(
-                    { name: '外資買賣超', type: 'bar', xAxisIndex: gridIdx, yAxisIndex: yAxes.length - 1, data: foreignNetData, itemStyle: { color: (p) => p.value >= 0 ? '#ef4444' : '#22c55e' } },
+                    { name: '外資買賣超', type: 'bar', xAxisIndex: gridIdx, yAxisIndex: yAxes.length - 1, data: foreignNetData, barCategoryGap: '0%', itemStyle: { color: (p) => p.value >= 0 ? '#ef4444' : '#22c55e' } },
                     { name: '外資佔股比%', type: 'line', xAxisIndex: gridIdx, yAxisIndex: yAxes.length - 2, data: shareData, symbol: 'none', lineStyle: { width: 2, color: '#6366f1' } }
                 );
                 currentTop += 90; gridIdx++;
             }
 
+
             const option = {
+
                 title: titles,
                 tooltip: {
                     trigger: 'axis',
@@ -404,7 +467,8 @@
                     link: { xAxisIndex: 'all' }
                 },
 
-                legend: { top: 5, data: ['K線', '成交量', '外資買賣超', '外資佔股比%', 'DIF', 'DEA', 'MACD', ...maSeries.map(m => m.name)] },
+                legend: { top: 5, data: ['K線', '成交量', '外資買賣超', '外資佔股比%', 'DIF', 'DEA', 'MACD', 'RSI6', 'RSI12', 'RSI24', ...maSeries.map(m => m.name)] },
+
                 grid: grids,
                 xAxis: xAxes,
                 yAxis: yAxes,
@@ -414,7 +478,6 @@
                 ],
                 series: series
             };
-
             myChart.setOption(option);
             const ro = new ResizeObserver(() => myChart.resize());
             ro.observe(document.getElementById(containerId));

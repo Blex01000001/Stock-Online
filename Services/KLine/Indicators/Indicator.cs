@@ -177,15 +177,16 @@ namespace Stock_Online.Services.KLine.Indicators
         /// 計算相對強弱指標 (Relative Strength Index, RSI)
         /// 公式：100 - (100 / (1 + RS)), 其中 RS = (n日內平均漲幅 / n日內平均跌幅)
         /// </summary>
-        public static List<decimal?> CalculateRsi(IReadOnlyList<StockDailyPrice> prices, int period)
+        public static List<double?> CalculateRsi(IReadOnlyList<StockDailyPrice> prices, int period = 14)
         {
-            var closes = prices.Select(x => x.ClosePrice).ToList();
-            var result = new List<decimal?>();
+            // 將收盤價轉換為 double 以進行高效能運算
+            var closes = prices.Select(x => (double)x.ClosePrice).ToList();
+            var result = new List<double?>();
 
             if (closes.Count <= period) return result;
 
             // 計算漲跌幅
-            var changes = new List<decimal>();
+            var changes = new List<double>();
             for (int i = 1; i < closes.Count; i++)
             {
                 changes.Add(closes[i] - closes[i - 1]);
@@ -203,19 +204,21 @@ namespace Stock_Online.Services.KLine.Indicators
                 // 取過去 period 天的漲跌資料
                 var periodChanges = changes.Skip(i - period).Take(period).ToList();
 
-                decimal avgGain = periodChanges.Where(c => c > 0).DefaultIfEmpty(0).Sum() / period;
-                decimal avgLoss = Math.Abs(periodChanges.Where(c => c < 0).DefaultIfEmpty(0).Sum()) / period;
+                double avgGain = periodChanges.Where(c => c > 0).DefaultIfEmpty(0).Sum() / (double)period;
+                double avgLoss = Math.Abs(periodChanges.Where(c => c < 0).DefaultIfEmpty(0).Sum()) / (double)period;
 
-                if (avgLoss == 0)
+                if (avgLoss <= 0)
                 {
-                    result.Add(100); // 如果都沒有跌，RSI 為 100
+                    result.Add(100.0); // 如果都沒有跌，RSI 為 100
                     continue;
                 }
 
-                decimal rs = avgGain / avgLoss;
-                decimal rsi = 100 - (100 / (1 + rs));
+                double rs = avgGain / avgLoss;
+                double rsi = 100.0 - (100.0 / (1.0 + rs));
 
+                // 保留兩位小數，符合圖表顯示習慣
                 result.Add(Math.Round(rsi, 2));
+
             }
             return result;
         }

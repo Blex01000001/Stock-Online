@@ -40,7 +40,7 @@ builder.Services.AddScoped<IUpdateOrchestrator, UpdateOrchestrator>();
 builder.Services.AddScoped<IStockProvider, StockProvider>();
 builder.Services.AddScoped<IDataUpdater, PriceUpdater>();
 builder.Services.AddScoped<IDataUpdater, DividendUpdater>();
-builder.Services.AddScoped<IDataUpdater, ShareHoldingUpdater>();
+builder.Services.AddScoped<IDataUpdater, ForeignShareHoldingUpdater>();
 builder.Services.AddScoped<IDataUpdater, InstitutionalInvestorsBuySellUpdater>();
 builder.Services.AddScoped<IInstitutionalInvestorsAdjustmentService, InstitutionalInvestorsAdjustmentService>();
 

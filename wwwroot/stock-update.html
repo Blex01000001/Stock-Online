@@ -140,13 +140,16 @@
             </div>
             <div class="field-group">
                 <label>年份 (指定年份時)</label>
-                <input type="number" id="specificYear" value="2024">
+                <input type="number" id="specificYear" value="2026">
             </div>
             <div class="checkbox-group">
                 <div class="checkbox-item"><input type="checkbox" name="dataType" value="PriceUpdater" checked> 股價</div>
-                <div class="checkbox-item"><input type="checkbox" name="dataType" value="ShareholdingUpdater">
-                    持股</div>
+                <div class="checkbox-item"><input type="checkbox" name="dataType"
+                        value="ForeignShareHoldingUpdater">外資持股比例
+                </div>
                 <div class="checkbox-item"><input type="checkbox" name="dataType" value="DividendUpdater"> 股利</div>
+                <div class="checkbox-item"><input type="checkbox" name="dataType"
+                        value="InstitutionalInvestorsBuySellUpdater"> 三大法人買賣</div>
             </div>
             <button class="submit-btn" onclick="executeUpdate()">執行更新任務</button>
         </div>

@@ -63,7 +63,6 @@ namespace Stock_Online.Controllers
                 start,
                 end
             );
-            Console.WriteLine($"result.Points.Count: {result.Count}");
             return Ok(result);
         }
         //[HttpGet("kline/pattern/all-stock")]
