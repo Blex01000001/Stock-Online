@@ -2,10 +2,10 @@
 using static System.Net.WebRequestMethods;
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
-using Stock_Online.DTOs;
 using Stock_Online.Hubs;
 using System.Text.Json;
 using Stock_Online.DTOs.UpdateRequest;
+using Stock_Online.Services.DataUpdater.Models.Responses;
 
 namespace Stock_Online.Services.DataUpdater
 {

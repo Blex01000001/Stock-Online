@@ -1,4 +1,4 @@
-﻿namespace Stock_Online.DTOs.Line_chart
+﻿namespace Stock_Online.Services.ROILine.Models.DTOs
 {
     public class LineSeriesDto
     {

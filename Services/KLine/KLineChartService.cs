@@ -1,10 +1,10 @@
 ﻿using Stock_Online.DataAccess.SQLite.Interface;
-using Stock_Online.DTOs;
 using Stock_Online.Services.KLine.Builders;
 using Stock_Online.Services.KLine.Queries;
 using SqlKata;
 using Stock_Online.Domain.Entities;
 using Stock_Online.Services.Adjustment;
+using Stock_Online.Services.KLine.Models.DTOs;
 
 namespace Stock_Online.Services.KLine
 {

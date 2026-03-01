@@ -1,4 +1,4 @@
-﻿using Stock_Online.DTOs;
+﻿using Stock_Online.Services.AnnualReview.Models.DTOs;
 
 namespace Stock_Online.Services.AnnualReview
 {

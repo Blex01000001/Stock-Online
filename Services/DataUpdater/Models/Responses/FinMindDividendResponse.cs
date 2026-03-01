@@ -1,4 +1,6 @@
-﻿namespace Stock_Online.DTOs
+﻿using Stock_Online.Services.DataUpdater.Models.DTOs;
+
+namespace Stock_Online.Services.DataUpdater.Models.Responses
 {
     public class FinMindDividendResponse
     {

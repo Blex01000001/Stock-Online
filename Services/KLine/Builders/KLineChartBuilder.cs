@@ -1,6 +1,7 @@
 ﻿using Stock_Online.Domain.Entities;
-using Stock_Online.DTOs;
+using Stock_Online.Services.DataUpdater.Models.DTOs;
 using Stock_Online.Services.KLine.Indicators;
+using Stock_Online.Services.KLine.Models.DTOs;
 
 namespace Stock_Online.Services.KLine.Builders
 {

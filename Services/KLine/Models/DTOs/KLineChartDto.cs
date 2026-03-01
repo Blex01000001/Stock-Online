@@ -1,6 +1,7 @@
 ﻿using Stock_Online.Domain.Entities;
+using Stock_Online.Services.DataUpdater.Models.DTOs;
 
-namespace Stock_Online.DTOs
+namespace Stock_Online.Services.KLine.Models.DTOs
 
 {
     public class KLineChartDto

@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
-using Stock_Online.DTOs;
 using Stock_Online.DTOs.UpdateRequest;
 using Stock_Online.Hubs;
+using Stock_Online.Services.DataUpdater.Models.DTOs;
+using Stock_Online.Services.DataUpdater.Models.Responses;
 using System.Text.Json;
 
 namespace Stock_Online.Services.DataUpdater

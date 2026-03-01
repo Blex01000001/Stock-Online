@@ -1,4 +1,4 @@
-﻿using Stock_Online.DTOs.Line_chart;
+﻿using Stock_Online.Services.ROILine.Models.DTOs;
 
 namespace Stock_Online.Services.ROILine
 {

@@ -1,4 +1,4 @@
-﻿namespace Stock_Online.DTOs
+﻿namespace Stock_Online.Services.DataUpdater.Models.DTOs
 {
     public class InstitutionalSeriesDto
     {

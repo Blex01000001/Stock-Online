@@ -2,7 +2,7 @@
 using Stock_Online.DataAccess.SQLite.Interface;
 using Stock_Online.Domain.Entities;
 using Stock_Online.DTOs;
-using Stock_Online.DTOs.Line_chart;
+using Stock_Online.Services.ROILine.Models.DTOs;
 using System;
 
 namespace Stock_Online.Services.ROILine
