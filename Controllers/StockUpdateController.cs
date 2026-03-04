@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Stock_Online.Services;
 using Stock_Online.DTOs;
-using Stock_Online.Services.Update;
 using Stock_Online.Common.Validation;
 using Stock_Online.DTOs.UpdateRequest;
 using Stock_Online.Services.UpdateOrchestrator;

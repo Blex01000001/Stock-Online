@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="utf-8" />
+    <title>型態掃描列表</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #3b82f6;
+            --bg: #f8fafc;
+            --border: #e2e8f0;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: 'Inter', "Microsoft JhengHei", sans-serif;
+            color: var(--primary);
+        }
+
+        #InputArea {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #fff;
+            padding: 12px 24px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-bottom: 1px solid var(--border);
+        }
+
+        #QueryArea {
+            display: flex;
+            gap: 8px;
+            background: #f0fdf4;
+            padding: 8px 12px;
+            border-radius: 8px;
+            align-items: center;
+        }
+
+        select,
+        input,
+        button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            outline: none;
+        }
+
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #059669;
+        }
+
+        /* 列表標頭樣式 */
+        .list-header {
+            display: grid;
+            grid-template-columns: 100px 120px 180px 120px 1fr;
+            padding: 12px 24px;
+            background: #f1f5f9;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+            margin: 20px 20px 0 20px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        /* 列表列樣式 */
+        .pattern-row {
+            display: grid;
+            grid-template-columns: 100px 120px 180px 120px 1fr;
+            align-items: center;
+            padding: 12px 24px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            margin: 0 20px;
+            transition: background 0.1s;
+        }
+
+        .pattern-row:hover {
+            background: #f8fafc;
+        }
+
+        .chart-mini-container {
+            width: 80%;
+            height: 180px;
+            /* 縮小高度，適合列表呈現 */
+        }
+
+        .text-accent {
+            color: var(--accent);
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="InputArea">
+        <div id="QueryArea">
+            <select id="selectPatternName">
+                <option value="BullishEngulfing">多頭吞噬 (Bullish Engulfing)</option>
+                <option value="MorningStar">晨星 (Morning Star)</option>
+                <option value="Hammer">槌頭線 (Hammer)</option>
+            </select>
+            <input type="date" id="inputStartDate">
+            <span>至</span>
+            <input type="date" id="inputEndDate">
+            <button onclick="searchPatterns()">開始掃描</button>
+        </div>
+        <button style="margin-left:auto; background:white; color:#64748b; border:1px solid #ddd;"
+            onclick="document.getElementById('ResultList').innerHTML=''">清空</button>
+    </div>
+
+    <div class="list-header">
+        <div>股票代號</div>
+        <div>股票名稱</div>
+        <div>符合型態</div>
+        <div>發生日期</div>
+        <div>K線圖 (聚焦區間)</div>
+    </div>
+    <div id="ResultList"></div>
+
+    <script>
+        const apiBase = "http://localhost:7278";
+
+        window.onload = function () {
+            const today = new Date();
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(today.getFullYear() - 1);
+            document.getElementById('inputEndDate').value = formatDate(today);
+            document.getElementById('inputStartDate').value = formatDate(oneYearAgo);
+        };
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        async function searchPatterns() {
+            const pattern = document.getElementById('selectPatternName').value;
+            const start = document.getElementById('inputStartDate').value.replace(/-/g, '');
+            const end = document.getElementById('inputEndDate').value.replace(/-/g, '');
+            const resultList = document.getElementById('ResultList');
+
+            const response = await fetch(`${apiBase}/PatternRecognition/scan/${pattern}?start=${start}&end=${end}`);
+            const summaryList = await response.json();
+            // console.log(summaryList);
+            if (summaryList.length === 0) {
+                alert("未找到符合型態的股票");
+                return;
+            }
+
+            resultList.innerHTML = '';
+            // 展開所有符合的紀錄 (一檔股票可能有多個日期符合)
+            for (const item of summaryList) {
+                for (const match of item.matches) {
+                    await renderPatternRow(item.stockId, start, end, match);
+                }
+            }
+        }
+
+        async function renderPatternRow(stockId, start, end, match) {
+            const res = await fetch(`${apiBase}/PatternRecognition/analyze/${stockId}?start=${start}&end=${end}`);
+            const data = await res.json();
+            const chartDto = data.chartData;
+
+            // console.log('match.endIndex: ' + match.endIndex);
+            // console.log('chartDto.points: ' + chartDto.points.length);
+
+            const rowId = `row-${stockId}-${match.endIndex}`;
+            const row = document.createElement('div');
+            row.className = 'pattern-row';
+            row.innerHTML = `
+                <div class="text-accent">${stockId}</div>
+                <div>${chartDto.stockName || '股票名稱'}</div>
+                <div style="color: #10b981;">${match.patternName}</div>
+                <div>${chartDto.points[match.endIndex].date}</div>
+                <div><div id="${rowId}" class="chart-mini-container"></div></div>
+            `;
+            document.getElementById('ResultList').appendChild(row);
+
+            renderMiniChart(rowId, chartDto, match);
+        }
+
+        function renderMiniChart(containerId, chartDto, match) {
+            const myChart = echarts.init(document.getElementById(containerId));
+
+            // 計算聚焦區間：發生日期的前後 20 根 K 棒
+            const totalPoints = chartDto.points.length;
+            const rangeSide = 20;
+            const startIdx = Math.max(0, match.endIndex - rangeSide);
+            const endIdx = Math.min(totalPoints - 1, match.endIndex + rangeSide);
+
+            const displayPoints = chartDto.points.slice(startIdx, endIdx + 1);
+            const dates = displayPoints.map(p => p.date);
+            const values = displayPoints.map(p => p.value);
+
+            const option = {
+                grid: { top: 10, bottom: 20, left: 40, right: 10 },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                    axisLabel: { fontSize: 10 }
+                },
+                yAxis: { scale: true, axisLabel: { fontSize: 10 } },
+                series: [
+                    {
+                        type: 'candlestick',
+                        data: values,
+                        itemStyle: {
+                            color: '#ef4444', color0: '#22c55e',
+                            borderColor: '#ef4444', borderColor0: '#22c55e'
+                        },
+                        markPoint: {
+                            data: [{
+                                coord: [chartDto.points[match.endIndex].date, parseFloat(chartDto.points[match.endIndex].value[3])],
+                                symbol: 'pin',
+                                symbolSize: 25,
+                                symbolOffset: [0, '-10'],
+                                itemStyle: { color: match.signal === 'Bullish' ? '#ef4444' : '#22c55e' }
+                            }]
+                        },
+                        // 縮小 K 線間距 (barWidth 設定為固定或較大比例)
+                        barMaxWidth: '100%'
+                    },
+                    ...chartDto.maLines.map(ma => ({
+                        name: ma.name,
+                        type: 'line',
+                        data: ma.values.slice(startIdx, endIdx + 1),
+                        smooth: true,
+                        showSymbol: false,
+                        lineStyle: { width: 1, opacity: 0.6 }
+                    }))
+                ]
+            };
+            myChart.setOption(option);
+        }
+    </script>
+</body>
+
+</html>

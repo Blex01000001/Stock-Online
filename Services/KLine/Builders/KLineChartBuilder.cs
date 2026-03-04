@@ -8,6 +8,7 @@ namespace Stock_Online.Services.KLine.Builders
     public class KLineChartBuilder
     {
         private readonly string _stockId;
+        private readonly string _stockName;
         private readonly int _left;
         private readonly int _right;
         private DateTime _date;
@@ -21,9 +22,10 @@ namespace Stock_Online.Services.KLine.Builders
         private List<MALineDto> _maLines;
         private RsiDto _rsi;
 
-        public KLineChartBuilder(string stockId, IReadOnlyList<StockDailyPrice> prices, int startIndex)
+        public KLineChartBuilder(string stockId, string stockName, IReadOnlyList<StockDailyPrice> prices, int startIndex)
         {
             _stockId = stockId;
+            _stockName = stockName;
             _allOriginalPrices = prices;
             _left = startIndex;
             _right = prices.Count - 1;
@@ -41,6 +43,7 @@ namespace Stock_Online.Services.KLine.Builders
             return new KLineChartDto
             {
                 StockId = _stockId,
+                StockName = _stockName,
                 Points = _points,
                 MALines = _maLines,
                 Shareholdings = _shareholdings,

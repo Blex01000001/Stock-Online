@@ -86,11 +86,15 @@
 <body>
     <div id="InputArea">
         <div id="QueryArea">
-            <input type="text" id="inputPatternName" placeholder="組合名稱 (如: 常用)" style="width: 150px;">
+            <select id="selectPatternName" style="padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                <option value="BullishEngulfing">多頭吞噬 (Bullish Engulfing)</option>
+                <option value="MorningStar">晨星 (Morning Star)</option>
+                <option value="Hammer">槌頭線 (Hammer)</option>
+            </select>
             <input type="date" id="inputStartDate">
             <span>至</span>
             <input type="date" id="inputEndDate">
-            <button onclick="searchStockPattern()">查詢組合</button>
+            <button onclick="searchStockPattern()">掃描型態</button>
         </div>
         <button class="btn-outline"
             style="margin-left:auto; background:white; color:#64748b; border:1px solid #ddd; padding:8px 12px; border-radius:6px;"
@@ -98,7 +102,141 @@
     </div>
     <div class="page" id="ChartList"></div>
     <script>
-        // 原有 searchStockPattern 與 ECharts 邏輯...
+        const apiBase = "http://localhost:7278";
+        // 頁面載入後自動執行
+        window.onload = function () {
+            const endDateInput = document.getElementById('inputEndDate');
+            const startDateInput = document.getElementById('inputStartDate');
+
+            const today = new Date();
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(today.getFullYear() - 1);
+
+            // 格式化為 YYYY-MM-DD 以符合 <input type="date"> 的要求
+            endDateInput.value = formatDate(today);
+            startDateInput.value = formatDate(oneYearAgo);
+        };
+
+        // 輔助函式：將 Date 物件轉為 YYYY-MM-DD
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        async function searchStockPattern() {
+            const pattern = document.getElementById('selectPatternName').value;
+            // 將 2024-05-20 轉換為 20240520
+            const start = document.getElementById('inputStartDate').value.replace(/-/g, '');
+            const end = document.getElementById('inputEndDate').value.replace(/-/g, '');
+
+            const chartList = document.getElementById('ChartList');
+
+            // 1. 呼叫掃描 API
+            const response = await fetch(`${apiBase}/PatternRecognition/scan/${pattern}?start=${start}&end=${end}`);
+            const summaryList = await response.json();
+
+            if (summaryList.length === 0) {
+                alert("區間內無符合型態的股票");
+                return;
+            }
+
+            // 2. 針對符合的股票，抓取詳細資料並繪圖
+            chartList.innerHTML = ''; // 清空舊圖
+            for (const item of summaryList) {
+                await renderSingleChart(item.stockId, start, end, item.matches);
+            }
+        }
+
+        async function renderSingleChart(stockId, start, end, matches) {
+            const res = await fetch(`${apiBase}/PatternRecognition/analyze/${stockId}?start=${start}&end=${end}`);
+            const data = await res.json(); // 這對應 PatternAnalysisResponse
+
+            // 取得 KLineChartDto (假設在 PatternAnalysisResponse.chartData)
+            const chartDto = data.chartData;
+
+            // 1. 資料預處理：轉換 Points 列表為 ECharts 所需格式
+            const dates = chartDto.points.map(p => p.date);
+            const volumes = chartDto.points.map(p => p.volume);
+            const candleValues = chartDto.points.map(p => p.value); // [open, close, low, high]
+
+            const card = document.createElement('div');
+            card.className = 'chart-card';
+            card.innerHTML = `<h3>${chartDto.stockId} - ${data.detectedPatterns[0].patternName || ''}</h3><div id="chart-${stockId}" class="chart-container"></div>`;
+            document.getElementById('ChartList').appendChild(card);
+
+            const myChart = echarts.init(document.getElementById(`chart-${stockId}`));
+
+            const option = {
+                animation: false,
+                tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+                dataZoom: [
+                    {
+                        type: 'inside', // 支援滑鼠滾輪縮放與拖曳平移
+                        start: 0,      // 初始顯示最後 30% 的資料
+                        end: 100
+                    },
+                    {
+                        type: 'slider', // 下方出現滑桿供拉動縮放
+                        show: true,
+                        start: 70,
+                        end: 100,
+                        bottom: 10      // 距離底部的距離
+                    }
+                ],
+                grid: [{ left: '10%', right: '8%', height: '60%' }], // 可預留空間給下方成交量
+                xAxis: { type: 'category', data: dates, boundaryGap: false },
+                yAxis: { scale: true, splitArea: { show: true } },
+                series: [
+                    {
+                        type: 'candlestick',
+                        name: '日K',
+                        data: candleValues,
+                        // 2. 修正 markPoint 邏輯
+                        markPoint: {
+                            data: data.detectedPatterns.map(p => {
+                                const targetPoint = chartDto.points[p.endIndex];
+                                if (!targetPoint) return null;
+
+                                return {
+                                    name: p.patternName,
+                                    // coord: [X軸日期, Y軸數值(取收盤價)]
+                                    // targetPoint.value[1] 對應 [open, close, low, high] 中的 close
+                                    coord: [targetPoint.date, parseFloat(targetPoint.value[1])],
+                                    //value: p.patternName,
+                                    value: 'T',
+                                    symbol: 'pin',
+                                    symbolSize: 40,
+                                    symbolOffset: [0, '-20'],
+                                    itemStyle: { color: p.signal === 'Bullish' ? '#ef4444' : '#22c55e' }
+                                };
+                            }).filter(m => m !== null)
+                        },
+                        itemStyle: {
+                            color: '#ef4444',     // 紅K (漲)
+                            color0: '#22c55e',    // 綠K (跌)
+                            borderColor: '#ef4444',
+                            borderColor0: '#22c55e'
+                        }
+                    },
+                    ...chartDto.maLines.map(ma => ({
+                        name: ma.name,
+                        type: 'line',
+                        data: ma.values, // 假設 MALineDto 有 values 陣列
+                        smooth: true,
+                        showSymbol: false,
+                        lineStyle: { opacity: 0.5 }
+                    }))
+                ]
+            };
+            myChart.setOption(option);
+        }
+        function clearChartList() {
+            document.getElementById('ChartList').innerHTML = '';
+        }
+
+
     </script>
 </body>
 

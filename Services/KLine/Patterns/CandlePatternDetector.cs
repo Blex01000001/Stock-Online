@@ -25,9 +25,6 @@ namespace Stock_Online.Services.KLine.Patterns
         }
         public bool IsMatch(CandlePattern pattern)
         {
-            //Assembly assembly = Assembly.GetExecutingAssembly();
-            //Type type = assembly.GetType($"Stock_Online.Services.KLine.Patterns.Items.{pattern.ToString()}");
-            //ICandlePattern candlePattern = (ICandlePattern)Activator.CreateInstance(type);
             ICandlePattern candlePattern = CandlePatternFactory.Get(pattern.ToString());
             CandleContext ctx = new CandleContext(_prices, _index, _maMap);
             return candlePattern.IsMatch(ctx);

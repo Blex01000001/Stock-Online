@@ -18,8 +18,6 @@ namespace Stock_Online.Services.Adjustment
             decimal cumulativeFactor = 1.0m;
             int splitIdx = 0;
 
-            Console.WriteLine($"splits.Count {sortedSplits.Count} splitIdx {splitIdx} {sortedSplits[splitIdx].StockId}");
-
             foreach (var p in sortedPrices)
             {
                 // 3. 如果當前的股價日期「早於」分割日，代表受到該次分割影響

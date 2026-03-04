@@ -7,6 +7,7 @@ namespace Stock_Online.Services.KLine.Models.DTOs
     public class KLineChartDto
     {
         public string StockId { get; set; }
+        public string StockName { get; set; }
         public List<KLinePointDto> Points { get; set; } = new();
         public string PatternType { get; set; }
         public List<MALineDto> MALines { get; set; } = new();

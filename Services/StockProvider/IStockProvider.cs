@@ -6,5 +6,7 @@ namespace Stock_Online.Services.StockProvider
     {
         // 傳入 Scope，回傳 List<string> { "2330", "2317", ... }
         List<string> GetStockIdsAsync(StockScope scope, string? singleId);
+        string GetName(string stockId);
+        bool TryGetName(string stockId, out string name);
     }
 }

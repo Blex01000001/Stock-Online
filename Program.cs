@@ -5,10 +5,11 @@ using Stock_Online.Services.Adjustment;
 using Stock_Online.Services.AnnualReview;
 using Stock_Online.Services.DataUpdater;
 using Stock_Online.Services.KLine;
-using Stock_Online.Services.KLine.Indicators;
+//using Stock_Online.Services.KLine.Indicators;
+using Stock_Online.Services.PatternRecognition.PatternType;
+using Stock_Online.Services.PatternRecognition;
 using Stock_Online.Services.ROILine;
 using Stock_Online.Services.StockProvider;
-using Stock_Online.Services.Update;
 using Stock_Online.Services.UpdateOrchestrator;
 using System.Text.Json.Serialization;
 
@@ -40,7 +41,8 @@ builder.Services.AddScoped<IDataUpdater, DividendUpdater>();
 builder.Services.AddScoped<IDataUpdater, ForeignShareHoldingUpdater>();
 builder.Services.AddScoped<IDataUpdater, InstitutionalInvestorsBuySellUpdater>();
 builder.Services.AddScoped<IInstitutionalInvestorsAdjustmentService, InstitutionalInvestorsAdjustmentService>();
-
+builder.Services.AddScoped<IKLinePattern, BullishEngulfingPattern>();
+builder.Services.AddScoped<IPatternRecognitionService, PatternRecognitionService>();
 
 // 註冊 CORS 服務，這裡先定義一個全開的 Policy
 builder.Services.AddCors(options =>
