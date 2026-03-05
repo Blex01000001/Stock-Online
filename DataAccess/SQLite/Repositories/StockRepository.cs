@@ -24,6 +24,7 @@ namespace Stock_Online.DataAccess.SQLite.Repositories
                 ?? throw new InvalidOperationException("Connection string not found.");
 
             _writer = new SqliteBatchWriter(_connectionString);
+
             EnsurePriceTable();
             EnsureDividendTable();
             EnsureShareHoldingTable();
