@@ -1,0 +1,11 @@
+﻿using Stock_Online.Domain.Entities;
+
+namespace Stock_Online.Application.Services.Adjustment
+{
+    public interface IInstitutionalInvestorsAdjustmentService
+    {
+        IReadOnlyList<StockInstitutionalInvestorsBuySell> AdjustBuySell(
+            IReadOnlyList<StockInstitutionalInvestorsBuySell> buySellData,
+            IReadOnlyList<StockCorporateAction> actions);
+    }
+}

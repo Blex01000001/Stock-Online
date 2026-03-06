@@ -1,0 +1,22 @@
+﻿using Stock_Online.Application.DTOs.DataUpdater;
+using Stock_Online.Domain.Entities;
+
+namespace Stock_Online.Application.DTOs.KLine
+
+{
+    public class KLineChartDto
+    {
+        public string StockId { get; set; }
+        public string StockName { get; set; }
+        public List<KLinePointDto> Points { get; set; } = new();
+        public string PatternType { get; set; }
+        public List<MALineDto> MALines { get; set; } = new();
+        public List<KLineMarkerDto> Markers { get; set; } = new();
+        public List<KLineMarkLineDto> MarkLines { get; set; } = new();
+        public List<StockShareholding> Shareholdings { get; set; } = new();
+        public InstitutionalSeriesDto Institutional { get; set; } = new();
+        public MacdDto Macd { get; set; } = new();
+        public BollingerBandsDto BollingerBands { get; set; } = new();
+        public RsiDto Rsi { get; set; } = new();
+    }
+}

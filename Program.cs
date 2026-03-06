@@ -1,17 +1,17 @@
-using Stock_Online.DataAccess.SQLite.Interface;
-using Stock_Online.DataAccess.SQLite.Repositories;
-using Stock_Online.Hubs;
-using Stock_Online.Services.Adjustment;
-using Stock_Online.Services.AnnualReview;
-using Stock_Online.Services.DataUpdater;
-using Stock_Online.Services.KLine;
 //using Stock_Online.Services.KLine.Indicators;
-using Stock_Online.Services.PatternRecognition.PatternType;
-using Stock_Online.Services.PatternRecognition;
-using Stock_Online.Services.ROILine;
-using Stock_Online.Services.StockProvider;
-using Stock_Online.Services.UpdateOrchestrator;
 using System.Text.Json.Serialization;
+using Stock_Online.Domain.Interfaces.Repositories;
+using Stock_Online.Infrastructure.Persistence.SQLite;
+using Stock_Online.WebAPI.Hubs;
+using Stock_Online.Application.Services.KLine;
+using Stock_Online.Application.Services.ROILine;
+using Stock_Online.Application.Services.PatternRecognition;
+using Stock_Online.Application.Services.Adjustment;
+using Stock_Online.Application.Services.DataUpdater;
+using Stock_Online.Application.Services.StockProvider;
+using Stock_Online.Application.Services.AnnualReview;
+using Stock_Online.Application.Services.UpdateOrchestrator;
+using Stock_Online.Application.Services.PatternRecognition.PatternType;
 
 var builder = WebApplication.CreateBuilder(args);
 
